@@ -1,12 +1,13 @@
-// components/ui/Input.tsx
-import { type InputHTMLAttributes } from "react";
+// components/ui/Textarea.tsx
+import { type TextareaHTMLAttributes } from "react";
 
-export function Input({
+export function Textarea({
   className,
   ...props
-}: InputHTMLAttributes<HTMLInputElement>) {
+}: TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
-    <input
+    <textarea
+      rows={5}
       className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2.5 border ${className}`}
       {...props}
     />

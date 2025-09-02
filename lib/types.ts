@@ -1,6 +1,5 @@
 // lib/types.ts
 
-// Definisi tipe untuk sebuah Event
 export type Event = {
   id: string;
   created_at: string;
@@ -11,7 +10,5 @@ export type Event = {
   organizer: string;
   category: string;
   registration_link: string;
+  image_url: string | null; // Tambahkan ini
 };
-
-// Kamu juga bisa menambahkan tipe lain di sini di masa depan
-// export type UserProfile = { ... };

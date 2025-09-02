@@ -1,33 +1,54 @@
 // components/EventCard.tsx
 import Link from "next/link";
+import Image from "next/image";
 import { type Event } from "@/lib/types";
 
-interface EventCardProps {
-  event: Event;
+// Komponen kecil untuk menampilkan informasi dengan ikon
+function InfoPill({ icon, text }: { icon: string; text: string | null }) {
+  if (!text) return null;
+  return (
+    <div className="flex items-center gap-2 text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full">
+      <span className="text-sm">{icon}</span>
+      <span className="truncate">{text}</span>
+    </div>
+  );
 }
 
 export default function EventCard({ event }: EventCardProps) {
+  const eventDate = new Date(event.event_date);
+
   return (
-    <div className="bg-white rounded-lg shadow-md p-5 flex flex-col transition-transform hover:scale-105">
-      <h2 className="text-xl font-semibold text-neutral-dark mb-2 line-clamp-2">
-        {event.title}
-      </h2>
-      <p className="text-sm text-gray-500 mb-1">
-        Penyelenggara:{" "}
-        <span className="font-medium text-primary">{event.organizer}</span>
-      </p>
-      <p className="text-sm text-gray-500 mb-4">
-        Lokasi: <span className="font-medium">{event.location}</span>
-      </p>
-      <p className="text-neutral-dark text-sm mb-4 flex-grow line-clamp-3">
-        {event.description}
-      </p>
-      <Link
-        href={`/event/${event.id}`}
-        className="mt-auto bg-accent text-white font-bold py-2 px-4 rounded-md text-center hover:bg-orange-600 transition-colors"
-      >
-        Lihat Detail
+    <div className="bg-white rounded-xl shadow-md flex flex-col overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+      <Link href={`/event/${event.id}`} className="block">
+        <div className="relative h-44 w-full">
+          <Image
+            src={event.image_url || "/placeholder.png"}
+            alt={`Poster for ${event.title}`}
+            fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            className="object-cover"
+          />
+        </div>
       </Link>
+      <div className="p-4 flex flex-col flex-grow">
+        <span className="bg-primary/10 text-primary text-xs font-semibold px-2.5 py-1 rounded-full self-start mb-2">
+          {event.category}
+        </span>
+        <h2 className="text-lg font-bold text-neutral-dark mb-3 line-clamp-2 flex-grow">
+          <Link href={`/event/${event.id}`}>{event.title}</Link>
+        </h2>
+        <div className="flex flex-wrap gap-2 mb-4">
+          <InfoPill
+            icon="🗓️"
+            text={eventDate.toLocaleDateString("id-ID", {
+              day: "numeric",
+              month: "short",
+              year: "numeric",
+            })}
+          />
+          <InfoPill icon="📍" text={event.location} />
+        </div>
+      </div>
     </div>
   );
 }

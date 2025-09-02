@@ -15,6 +15,7 @@ export async function addEvent(formData: FormData) {
     event_date: formData.get("event_date") as string,
     description: formData.get("description") as string,
     registration_link: formData.get("registration_link") as string,
+    image_url: formData.get("image_url") as string, // Tambahkan ini
   };
 
   const supabase = createClient();
@@ -22,7 +23,6 @@ export async function addEvent(formData: FormData) {
 
   if (error) {
     console.error("Error inserting data:", error);
-    // TODO: Implement a more user-friendly error handling
     return { error: "Gagal menambahkan event." };
   }
 

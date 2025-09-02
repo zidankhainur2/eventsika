@@ -1,14 +1,17 @@
-// components/ui/Input.tsx
-import { type InputHTMLAttributes } from "react";
+// components/ui/Select.tsx
+import { type SelectHTMLAttributes } from "react";
 
-export function Input({
+export function Select({
   className,
+  children,
   ...props
-}: InputHTMLAttributes<HTMLInputElement>) {
+}: SelectHTMLAttributes<HTMLSelectElement>) {
   return (
-    <input
+    <select
       className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm p-2.5 border ${className}`}
       {...props}
-    />
+    >
+      {children}
+    </select>
   );
 }
