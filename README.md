@@ -62,8 +62,8 @@ Ikuti langkah-langkah berikut untuk menjalankan proyek ini di mesin lokal Anda.
 1.  **Clone Repositori**
 
     ```bash
-    git clone [https://github.com/USERNAME/NAMA_REPO.git](https://github.com/USERNAME/NAMA_REPO.git)
-    cd NAMA_REPO
+    git clone [https://github.com/zidankhainur2/eventsika.git](https://github.com/zidankhainur2/eventsika.git)
+    cd eventsika
     ```
 
 2.  **Instal Dependensi Proyek**
@@ -93,6 +93,7 @@ Ikuti langkah-langkah berikut untuk menjalankan proyek ini di mesin lokal Anda.
 ## Konfigurasi Environment Variables
 
 File `.env.local` diperlukan untuk menghubungkan aplikasi Next.js dengan Supabase. Pastikan file ini tidak pernah Anda push ke repositori publik.
+
 NEXT_PUBLIC_SUPABASE_URL=URL_PROYEK_SUPABASE_ANDA
 NEXT_PUBLIC_SUPABASE_ANON_KEY=ANON_KEY_PROYEK_ANDA
 

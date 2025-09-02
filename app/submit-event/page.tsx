@@ -1,42 +1,7 @@
-// src/app/submit-event/page.tsx
-import { createClient } from "@/utils/supabase/client";
-import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
-
-const supabase = createClient();
+import { Button } from "@/components/ui/Button";
+import { addEvent } from "../action";
 
 export default function SubmitEventPage() {
-  // Ini adalah Server Action. Fungsi ini akan berjalan di server, bukan di browser.
-  async function addEvent(formData: FormData) {
-    "use server"; // Wajib ada untuk menandakan ini Server Action
-
-    // 1. Mengambil data dari form
-    const eventData = {
-      title: formData.get("title") as string,
-      organizer: formData.get("organizer") as string,
-      category: formData.get("category") as string,
-      location: formData.get("location") as string,
-      event_date: formData.get("event_date") as string,
-      description: formData.get("description") as string,
-      registration_link: formData.get("registration_link") as string,
-    };
-
-    // 2. Mengirim data ke tabel 'events' di Supabase
-    const { error } = await supabase.from("events").insert([eventData]);
-
-    if (error) {
-      // Di dunia nyata, kita akan menampilkan error yang lebih baik
-      console.error("Error inserting data:", error);
-      return;
-    }
-
-    // 3. Membersihkan cache halaman utama agar event baru langsung muncul
-    revalidatePath("/");
-
-    // 4. Mengarahkan pengguna kembali ke halaman utama setelah berhasil
-    redirect("/");
-  }
-
   return (
     <main className="bg-neutral-light min-h-screen p-4 sm:p-8">
       <div className="max-w-2xl mx-auto bg-white p-6 sm:p-8 rounded-lg shadow-lg">
@@ -163,12 +128,12 @@ export default function SubmitEventPage() {
           </div>
 
           <div>
-            <button
+            <Button
               type="submit"
               className="w-full bg-primary text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-800 transition-colors"
             >
               Submit Event
-            </button>
+            </Button>
           </div>
         </form>
       </div>

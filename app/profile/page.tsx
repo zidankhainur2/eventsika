@@ -1,47 +1,18 @@
 // src/app/profile/page.tsx
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
+import { Button } from "@/components/ui/Button";
+import { updateUserPreferences } from "../action";
 
 export default async function ProfilePage() {
   const supabase = createClient();
-
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Jika tidak ada user yang login, arahkan ke halaman login
   if (!user) {
     return redirect("/login");
   }
-
-  // Server Action untuk update data pengguna
-  const updateUserPreferences = async (formData: FormData) => {
-    "use server";
-
-    const major = formData.get("major") as string;
-    const interests = formData.get("interests") as string;
-
-    const supabase = createClient();
-
-    // Simpan data ke 'user_metadata'
-    const { error } = await supabase.auth.updateUser({
-      data: {
-        major: major,
-        interests: interests,
-      },
-    });
-
-    if (error) {
-      console.error("Error updating user preferences:", error);
-      // Di aplikasi nyata, Anda bisa menambahkan pesan error
-      return;
-    }
-
-    // Revalidasi path agar data di halaman ini dan halaman utama diperbarui
-    revalidatePath("/profile", "layout");
-    revalidatePath("/", "layout");
-  };
 
   return (
     <main className="bg-neutral-light min-h-screen p-4 sm:p-8">
@@ -89,12 +60,12 @@ export default async function ProfilePage() {
           </div>
 
           <div>
-            <button
+            <Button
               type="submit"
               className="w-full bg-primary text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-800 transition-colors"
             >
               Simpan Perubahan
-            </button>
+            </Button>
           </div>
         </form>
       </div>
