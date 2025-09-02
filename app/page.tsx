@@ -1,103 +1,127 @@
-import Image from "next/image";
+// src/app/page.tsx
+import { createClient } from "@/utils/supabase/server";
+import SearchFilter from "@/components/SearchFilter"; // Impor komponen baru
 
-export default function Home() {
+// ... (Tipe Event tetap sama)
+type Event = {
+  id: string;
+  title: string;
+  description: string;
+  event_date: string;
+  location: string;
+  organizer: string;
+  category: string;
+};
+
+// Terima searchParams sebagai prop
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams?: {
+    search?: string;
+    category?: string;
+  };
+}) {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const interests: string[] =
+    user?.user_metadata.interests
+      ?.split(",")
+      .map((item: string) => item.trim()) || [];
+
+  let query = supabase
+    .from("events")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  // Cek apakah ada personalisasi
+  let isPersonalized = false;
+  if (
+    interests.length > 0 &&
+    !searchParams?.search &&
+    !searchParams?.category
+  ) {
+    const interestFilter = interests
+      .map((interest) => `category.ilike.%${interest}%`)
+      .join(",");
+    query = query.or(interestFilter);
+    isPersonalized = true;
+  }
+
+  // Terapkan filter pencarian jika ada
+  if (searchParams?.search) {
+    query = query.ilike("title", `%${searchParams.search}%`);
+  }
+
+  // Terapkan filter kategori jika ada
+  if (searchParams?.category) {
+    query = query.eq("category", searchParams.category);
+  }
+
+  const { data: events, error } = await query;
+
+  if (error) {
+    return <p>Gagal memuat event: {error.message}</p>;
+  }
+
+  const pageTitle = isPersonalized
+    ? "Event Pilihan Untukmu"
+    : "Event Kampus Terbaru";
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <main className="bg-neutral-light min-h-screen p-4 sm:p-8">
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-3xl font-bold text-primary mb-6">{pageTitle}</h1>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+        {/* Tambahkan komponen SearchFilter di sini */}
+        <SearchFilter />
+
+        {/* ... (Sisa kode untuk menampilkan pesan kosong dan daftar event tetap sama) ... */}
+        {(!events || events.length === 0) && (
+          <div className="text-center bg-white p-8 rounded-lg shadow-md">
+            <p className="text-neutral-dark">
+              {isPersonalized
+                ? "Oops! Belum ada event yang cocok dengan minatmu."
+                : "Tidak ada event yang cocok dengan pencarianmu."}
+            </p>
+          </div>
+        )}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {events &&
+            events.map((event: Event) => (
+              <div
+                key={event.id}
+                className="bg-neutral-white rounded-lg shadow-md p-5 flex flex-col"
+              >
+                {/* ... Kartu event tidak berubah ... */}
+                <h2 className="text-xl font-semibold text-neutral-dark mb-2">
+                  {event.title}
+                </h2>
+                <p className="text-sm text-gray-500 mb-1">
+                  Penyelenggara:{" "}
+                  <span className="font-medium text-primary">
+                    {event.organizer}
+                  </span>
+                </p>
+                <p className="text-sm text-gray-500 mb-4">
+                  Lokasi: <span className="font-medium">{event.location}</span>
+                </p>
+                <p className="text-neutral-dark text-sm mb-4 flex-grow">
+                  {event.description.substring(0, 100)}...
+                </p>
+                <a
+                  href={`/event/${event.id}`}
+                  className="mt-auto bg-accent text-white font-bold py-2 px-4 rounded-md text-center hover:bg-orange-600 transition-colors"
+                >
+                  Lihat Detail
+                </a>
+              </div>
+            ))}
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+      </div>
+    </main>
   );
 }
