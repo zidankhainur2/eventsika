@@ -1,7 +1,10 @@
 // components/ui/Button.tsx
+"use client"; // Tambahkan ini untuk menggunakan framer-motion
+
+import { motion } from "framer-motion";
 import { type ComponentProps } from "react";
 
-type ButtonProps = ComponentProps<"button"> & {
+type ButtonProps = ComponentProps<typeof motion.button> & {
   variant?: "primary" | "accent";
 };
 
@@ -11,14 +14,18 @@ export function Button({
   ...props
 }: ButtonProps) {
   const baseClasses =
-    "w-full text-white font-bold py-3 px-4 rounded-lg transition-colors disabled:opacity-50";
+    "w-full font-bold py-3 px-4 rounded-lg transition-colors disabled:opacity-50 shadow-md";
+
+  // Sesuaikan warna teks berdasarkan varian
   const variantClasses = {
-    primary: "bg-primary hover:bg-blue-800",
-    accent: "bg-accent hover:bg-orange-600",
+    primary: "bg-primary hover:bg-red-900 text-white",
+    accent: "bg-accent hover:bg-yellow-500 text-on-accent", // Teks gelap di atas kuning
   };
 
   return (
-    <button
+    <motion.button
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
       className={`${baseClasses} ${variantClasses[variant]} ${className}`}
       {...props}
     />

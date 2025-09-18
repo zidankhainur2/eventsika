@@ -1,21 +1,22 @@
 // src/components/AuthButton.tsx
-import { signOut } from "@/app/action";
-import { createClient } from "@/utils/supabase/server";
 import Link from "next/link";
+import { signOut } from "@/app/action";
 
-export default async function AuthButton() {
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+export default function AuthButton({ user }: { user: any }) {
   return user ? (
     <div className="flex items-center gap-4">
-      <Link href="/profile" className="text-sm hover:underline">
-        <span className="text-sm">Halo, {user.email}</span>
+      <Link
+        href="/profile"
+        className="text-sm font-medium text-neutral-dark/80 hover:text-primary transition-colors"
+        title={user.email}
+      >
+        <span className="hidden lg:inline truncate max-w-[150px]">
+          Halo, {user.email}
+        </span>
+        <span className="lg:hidden">Profil</span>
       </Link>
       <form action={signOut}>
-        <button className="py-2 px-4 rounded-md no-underline bg-red-500 text-white hover:bg-red-600">
+        <button className="py-2 px-3 rounded-md text-sm bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
           Logout
         </button>
       </form>
@@ -23,7 +24,7 @@ export default async function AuthButton() {
   ) : (
     <Link
       href="/login"
-      className="py-2 px-4 rounded-md no-underline bg-orange-500 text-white hover:bg-orange-600"
+      className="py-2 px-4 rounded-md text-sm no-underline bg-accent text-on-accent font-semibold hover:bg-yellow-500 transition-colors"
     >
       Login
     </Link>

@@ -1,2 +1,17 @@
 /* app/globals.css */
 @import "tailwindcss";
+
+/* Definisi variabel kustom untuk Tailwind v4.
+  Ini akan menggantikan blok `theme.extend` di file config.
+*/
+@theme {
+  --color-primary: #800000; /* Maroon Red */
+  --color-accent: #ffd700; /* Golden Yellow */
+  --color-on-accent: #332a00; /* Teks gelap di atas kuning */
+
+  --color-neutral-white: #ffffff;
+  --color-neutral-light: #f8f8f8;
+  --color-neutral-dark: #1a1a1a;
+
+  --font-sans: "Poppins", sans-serif;
+}

@@ -1,14 +1,15 @@
 // src/app/page.tsx
 import SearchFilter from "@/components/SearchFilter";
-import EventCard from "@/components/EventCard";
 import Hero from "@/components/Hero";
 import { getEvents } from "@/lib/supabase";
+import AnimatedEventGrid from "@/components/AnimatedEventGrid";
 
 export default async function HomePage({
   searchParams,
 }: {
   searchParams?: { search?: string; category?: string };
 }) {
+  // Pengambilan data kembali terjadi di Server Component
   const { events, pageTitle, isPersonalized } = await getEvents(searchParams);
 
   return (
@@ -35,11 +36,8 @@ export default async function HomePage({
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {events.map((event) => (
-              <EventCard key={event.id} event={event} />
-            ))}
-          </div>
+          // Panggil komponen client dan lewatkan data sebagai props
+          <AnimatedEventGrid events={events} />
         )}
       </section>
     </main>
