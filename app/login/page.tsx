@@ -25,7 +25,10 @@ export default function LoginPage() {
     setMessage(null);
 
     if (action === "signIn") {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
       if (error) {
         setError(error.message);
       } else {
@@ -44,8 +47,9 @@ export default function LoginPage() {
       if (error) {
         setError(error.message);
       } else {
-        // Tampilkan pesan sukses, jangan redirect
-        setMessage("Pendaftaran berhasil! Silakan cek email Anda untuk verifikasi.");
+        setMessage(
+          "Pendaftaran berhasil! Silakan cek email Anda untuk verifikasi."
+        );
       }
     }
     setIsLoading(false);
@@ -56,7 +60,9 @@ export default function LoginPage() {
       <Card className="max-w-md w-full">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-primary">EventSika</h1>
-          <p className="text-neutral-dark/70 mt-2">Masuk atau Daftar untuk Melanjutkan</p>
+          <p className="text-neutral-dark/70 mt-2">
+            Masuk atau Daftar untuk Melanjutkan
+          </p>
         </div>
 
         {message ? (
@@ -70,7 +76,9 @@ export default function LoginPage() {
               <Label htmlFor="email">Email</Label>
               <MdEmail className="absolute top-10 left-3 text-gray-400" />
               <Input
-                type="email" name="email" id="email"
+                type="email"
+                name="email"
+                id="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="pl-10"
@@ -82,7 +90,9 @@ export default function LoginPage() {
               <Label htmlFor="password">Password</Label>
               <MdLock className="absolute top-10 left-3 text-gray-400" />
               <Input
-                type="password" name="password" id="password"
+                type="password"
+                name="password"
+                id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="pl-10"
@@ -91,13 +101,22 @@ export default function LoginPage() {
               />
             </div>
 
-            {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+            {error && (
+              <p className="text-red-500 text-sm text-center">{error}</p>
+            )}
 
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
-              <Button onClick={() => handleAuthAction("signIn")} disabled={isLoading}>
+              <Button
+                onClick={() => handleAuthAction("signIn")}
+                disabled={isLoading}
+              >
                 {isLoading ? "Loading..." : "Login"}
               </Button>
-              <Button onClick={() => handleAuthAction("signUp")} disabled={isLoading} variant="accent">
+              <Button
+                onClick={() => handleAuthAction("signUp")}
+                disabled={isLoading}
+                variant="accent"
+              >
                 {isLoading ? "Loading..." : "Daftar"}
               </Button>
             </div>

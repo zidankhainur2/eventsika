@@ -28,6 +28,11 @@ export default async function RootLayout({
     data: { user },
   } = await supabase.auth.getUser();
 
+  // Ambil profil untuk cek peran
+  const { data: profile } = user
+    ? await supabase.from("profiles").select("role").eq("id", user.id).single()
+    : { data: null };
+
   return (
     <html lang="id" className="scroll-smooth">
       <body className={`${poppins.className} bg-neutral-light`}>
@@ -39,6 +44,15 @@ export default async function RootLayout({
 
             {/* Navigasi Desktop */}
             <div className="hidden md:flex items-center gap-6">
+              {/* Tampilkan link Admin jika rolenya super_admin */}
+              {profile?.role === "super_admin" && (
+                <Link
+                  href="/admin"
+                  className="text-sm font-medium text-red-600 hover:text-primary transition-colors"
+                >
+                  Admin
+                </Link>
+              )}
               <Link
                 href="/submit-event"
                 className="text-sm font-medium text-neutral-dark/80 hover:text-primary transition-colors"
@@ -48,13 +62,11 @@ export default async function RootLayout({
               <AuthButton user={user} />
             </div>
 
-            {/* Navigasi Mobile */}
+            {/* Navigasi Mobile (bisa ditambahkan link admin juga jika perlu) */}
             <MobileMenu user={user} />
           </nav>
         </header>
-
         <div className="w-full max-w-6xl mx-auto px-4">{children}</div>
-
         <Footer />
       </body>
     </html>

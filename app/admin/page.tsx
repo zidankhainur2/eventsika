@@ -1,40 +1,28 @@
 // app/admin/page.tsx
-import { createClient } from "@/utils/supabase/server";
+import { createClient as createServerClient } from "@/utils/supabase/server";
+import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { ApplicationActions } from "./ApplicationActions";
 
-
-// Tipe data untuk pengajuan, termasuk informasi dari profil
 type ApplicationWithProfile = {
   id: string;
+  user_id: string;
   organization_name: string;
   contact_person: string;
   created_at: string;
-  profiles: {
+  profile: {
     id: string;
-    email: string; // Kita perlu email untuk ditampilkan
-  } | null;
+    email: string;
+  };
 };
 
-// Fungsi untuk mengambil data pengajuan yang pending
 async function getPendingApplications(
-  supabase: ReturnType<typeof createClient>
-) {
+  supabase: ReturnType<typeof createServerClient>
+): Promise<ApplicationWithProfile[]> {
   const { data, error } = await supabase
     .from("organizer_applications")
-    .select(
-      `
-      id,
-      organization_name,
-      contact_person,
-      created_at,
-      profiles (
-        id,
-        email
-      )
-    `
-    )
+    .select("id, user_id, organization_name, contact_person, created_at")
     .eq("status", "pending")
     .order("created_at", { ascending: true });
 
@@ -42,30 +30,40 @@ async function getPendingApplications(
     console.error("Error fetching applications:", error);
     return [];
   }
+  if (!data) return [];
 
-  // Ambil juga email dari auth.users karena belum ada di profiles
-  const applications = await Promise.all(
+  const adminSupabase = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
+  const applicationsWithEmails = await Promise.all(
     data.map(async (app) => {
-      if (!app.profiles) {
-        const {
-          data: { user },
-        } = await supabase.auth.admin.getUserById(app.id);
-        return {
-          ...app,
-          profiles: { id: app.id, email: user?.email || "N/A" },
-        };
+      const {
+        data: { user },
+        error: userError,
+      } = await adminSupabase.auth.admin.getUserById(app.user_id);
+
+      if (userError) {
+        console.error(`Error fetching user ${app.user_id}:`, userError);
       }
-      return app;
+
+      return {
+        ...app,
+        profile: {
+          id: app.user_id,
+          email: user?.email || "Gagal mengambil email",
+        },
+      };
     })
   );
 
-  return applications as ApplicationWithProfile[];
+  return applicationsWithEmails as ApplicationWithProfile[];
 }
 
 export default async function AdminDashboardPage() {
-  const supabase = createClient();
+  const supabase = createServerClient();
 
-  // 1. Cek otentikasi pengguna
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -73,7 +71,6 @@ export default async function AdminDashboardPage() {
     return redirect("/login");
   }
 
-  // 2. Cek peran pengguna
   const { data: profile } = await supabase
     .from("profiles")
     .select("role")
@@ -81,7 +78,6 @@ export default async function AdminDashboardPage() {
     .single();
 
   if (profile?.role !== "super_admin") {
-    // Jika bukan super_admin, tendang ke halaman utama
     return redirect("/");
   }
 
@@ -96,7 +92,6 @@ export default async function AdminDashboardPage() {
         <h2 className="text-xl font-semibold text-neutral-dark mb-4">
           Pengajuan Organizer Tertunda
         </h2>
-
         {applications.length === 0 ? (
           <p className="text-gray-500 bg-gray-50 p-4 rounded-md">
             Tidak ada pengajuan yang perlu ditinjau saat ini.
@@ -113,16 +108,15 @@ export default async function AdminDashboardPage() {
                     {app.organization_name}
                   </p>
                   <p className="text-sm text-gray-600">
-                    Email: {app.profiles?.email ?? "Tidak tersedia"}
+                    Email: {app.profile.email}
                   </p>
                   <p className="text-sm text-gray-500 mt-1">
                     Kontak: {app.contact_person}
                   </p>
                 </div>
-                {/* Komponen Aksi terpisah */}
                 <ApplicationActions
                   applicationId={app.id}
-                  userId={app.profiles?.id ?? ""}
+                  userId={app.profile.id}
                 />
               </div>
             ))}

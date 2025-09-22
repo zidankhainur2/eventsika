@@ -1,15 +1,11 @@
-// src/app/profile/page.tsx
+// app/profile/page.tsx
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
-import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { Input } from "@/components/ui/Input";
-import { Label } from "@/components/ui/Label";
-import { updateUserPreferences } from "../action";
 import Link from "next/link";
 import { type Profile } from "@/lib/types";
+import ProfileForm from "./ProfileForm"; // Impor komponen form baru
 
-// Fungsi helper untuk mengambil data profil
 async function getProfile(
   supabase: ReturnType<typeof createClient>
 ): Promise<Profile | null> {
@@ -31,7 +27,6 @@ async function getProfile(
   return profile;
 }
 
-// Fungsi helper untuk mengecek status aplikasi
 async function getApplicationStatus(
   supabase: ReturnType<typeof createClient>
 ): Promise<string | null> {
@@ -75,7 +70,6 @@ export default async function ProfilePage() {
             <h1 className="text-3xl font-bold text-primary">Profil Saya</h1>
             <p className="text-gray-600 mt-1">Email: {user.email}</p>
           </div>
-          {/* Tampilkan lencana peran */}
           {profile?.role === "organizer" && (
             <span className="bg-green-100 text-green-800 text-xs font-medium px-3 py-1.5 rounded-full">
               Organizer
@@ -88,7 +82,6 @@ export default async function ProfilePage() {
           )}
         </div>
 
-        {/* Bagian untuk pengajuan organizer */}
         {profile?.role === "user" && !applicationStatus && (
           <div className="my-6 p-4 bg-gray-50 rounded-lg text-center">
             <h2 className="font-semibold text-neutral-dark">
@@ -97,17 +90,15 @@ export default async function ProfilePage() {
             <p className="text-sm text-gray-600 mt-1 mb-3">
               Ajukan diri Anda sebagai organizer untuk mulai membuat event.
             </p>
-            <Button
-              aschild={true}
-              variant="accent"
-              className="w-auto px-6 py-2"
+            <Link
+              href="/profile/apply-organizer"
+              className="inline-block w-auto px-6 py-2 rounded-lg font-bold transition-colors shadow-md bg-accent hover:bg-yellow-500 text-on-accent"
             >
-              <Link href="/profile/apply-organizer">Ajukan Sekarang</Link>
-            </Button>
+              Ajukan Sekarang
+            </Link>
           </div>
         )}
 
-        {/* Tampilkan status pengajuan jika ada */}
         {applicationStatus === "pending" && (
           <div className="my-6 p-4 bg-yellow-100 text-yellow-800 rounded-lg text-center text-sm">
             <p>
@@ -122,39 +113,11 @@ export default async function ProfilePage() {
               <strong>Status Pengajuan:</strong> Mohon maaf, pengajuan Anda
               ditolak.
             </p>
-            {/* Opsi untuk mengajukan lagi bisa ditambahkan di sini */}
           </div>
         )}
 
-        <form action={updateUserPreferences} className="space-y-6 mt-6">
-          <h2 className="text-xl font-semibold text-primary border-b pb-2">
-            Preferensi Personalisasi
-          </h2>
-          <div>
-            <Label htmlFor="major">Jurusan</Label>
-            <Input
-              type="text"
-              name="major"
-              id="major"
-              defaultValue={profile?.major || ""}
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="interests">Minat (pisahkan dengan koma)</Label>
-            <Input
-              type="text"
-              name="interests"
-              id="interests"
-              defaultValue={profile?.interests || ""}
-              placeholder="Contoh: Programming, Desain, Musik"
-            />
-          </div>
-
-          <div>
-            <Button type="submit">Simpan Perubahan</Button>
-          </div>
-        </form>
+        {/* Panggil komponen form di sini */}
+        <ProfileForm profile={profile} />
       </Card>
     </main>
   );

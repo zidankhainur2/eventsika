@@ -37,20 +37,21 @@ export function ApplicationActions({
   applicationId: string;
   userId: string;
 }) {
-  // Mengikat ID ke dalam server action
-  const approveAction = approveOrganizerApplication.bind(
-    null,
-    applicationId,
-    userId
-  );
-  const rejectAction = rejectOrganizerApplication.bind(null, applicationId);
+  
+  const handleApprove = async () => {
+    await approveOrganizerApplication(applicationId, userId);
+  };
+
+  const handleReject = async () => {
+    await rejectOrganizerApplication(applicationId);
+  };
 
   return (
     <div className="flex gap-2 w-full sm:w-auto">
-      <form action={approveAction} className="flex-1">
+      <form action={handleApprove} className="flex-1">
         <ActionButton variant="approve">Setujui</ActionButton>
       </form>
-      <form action={rejectAction} className="flex-1">
+      <form action={handleReject} className="flex-1">
         <ActionButton variant="reject">Tolak</ActionButton>
       </form>
     </div>
