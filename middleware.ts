@@ -36,27 +36,41 @@ export async function middleware(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  const { pathname } = request.nextUrl;
 
-  const protectedRoutes = ["/profile", "/submit-event"];
+  const protectedRoutes = ["/profile", "/submit-event", "/admin"];
 
-  // Jika pengguna tidak login dan mencoba mengakses rute yang dilindungi
-  if (!user && protectedRoutes.includes(request.nextUrl.pathname)) {
-    // Arahkan ke halaman login
+  // Arahkan jika belum login
+  if (!user && protectedRoutes.some((route) => pathname.startsWith(route))) {
     return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  // PENINGKATAN KEAMANAN: Cek peran untuk rute spesifik
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    // Hanya super_admin yang bisa akses /admin
+    if (pathname.startsWith("/admin") && profile?.role !== "super_admin") {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
+
+    // Hanya organizer atau super_admin yang bisa akses /submit-event
+    if (
+      pathname.startsWith("/submit-event") &&
+      profile?.role !== "organizer" &&
+      profile?.role !== "super_admin"
+    ) {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
   }
 
   return response;
 }
 
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * Feel free to modify this pattern to include more paths.
-     */
-    "/((?!_next/static|_next/image|favicon.ico).*)",
-  ],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };

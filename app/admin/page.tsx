@@ -5,60 +5,57 @@ import { redirect } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { ApplicationActions } from "./ApplicationActions";
 
-type ApplicationWithProfile = {
-  id: string;
+type ApplicationWithEmail = {
+  id: string; // id dari pengajuan
   user_id: string;
   organization_name: string;
   contact_person: string;
   created_at: string;
-  profile: {
-    id: string;
-    email: string;
-  };
+  email: string;
 };
 
-async function getPendingApplications(
-  supabase: ReturnType<typeof createServerClient>
-): Promise<ApplicationWithProfile[]> {
-  const { data, error } = await supabase
+async function getPendingApplications(): Promise<ApplicationWithEmail[]> {
+  const supabase = createServerClient();
+
+  // 1. Ambil data pengajuan dasar. RLS akan berlaku di sini.
+  const { data: applications, error: applicationsError } = await supabase
     .from("organizer_applications")
     .select("id, user_id, organization_name, contact_person, created_at")
     .eq("status", "pending")
     .order("created_at", { ascending: true });
 
-  if (error) {
-    console.error("Error fetching applications:", error);
+  if (applicationsError) {
+    console.error("Error fetching applications:", applicationsError.message);
     return [];
   }
-  if (!data) return [];
+  if (!applications) return [];
 
+  // 2. Buat client admin untuk mengambil email secara aman
   const adminSupabase = createAdminClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
+  // 3. Gabungkan data pengajuan dengan email pengguna
   const applicationsWithEmails = await Promise.all(
-    data.map(async (app) => {
+    applications.map(async (app) => {
       const {
         data: { user },
         error: userError,
       } = await adminSupabase.auth.admin.getUserById(app.user_id);
 
       if (userError) {
-        console.error(`Error fetching user ${app.user_id}:`, userError);
+        console.error(`Error fetching user ${app.user_id}:`, userError.message);
       }
 
       return {
         ...app,
-        profile: {
-          id: app.user_id,
-          email: user?.email || "Gagal mengambil email",
-        },
+        email: user?.email || "Tidak dapat mengambil email",
       };
     })
   );
 
-  return applicationsWithEmails as ApplicationWithProfile[];
+  return applicationsWithEmails;
 }
 
 export default async function AdminDashboardPage() {
@@ -67,9 +64,7 @@ export default async function AdminDashboardPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) {
-    return redirect("/login");
-  }
+  if (!user) return redirect("/login");
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -81,7 +76,7 @@ export default async function AdminDashboardPage() {
     return redirect("/");
   }
 
-  const applications = await getPendingApplications(supabase);
+  const applications = await getPendingApplications();
 
   return (
     <main className="py-8 sm:py-12">
@@ -107,16 +102,14 @@ export default async function AdminDashboardPage() {
                   <p className="font-bold text-lg text-neutral-dark">
                     {app.organization_name}
                   </p>
-                  <p className="text-sm text-gray-600">
-                    Email: {app.profile.email}
-                  </p>
+                  <p className="text-sm text-gray-600">Email: {app.email}</p>
                   <p className="text-sm text-gray-500 mt-1">
                     Kontak: {app.contact_person}
                   </p>
                 </div>
                 <ApplicationActions
                   applicationId={app.id}
-                  userId={app.profile.id}
+                  userId={app.user_id}
                 />
               </div>
             ))}

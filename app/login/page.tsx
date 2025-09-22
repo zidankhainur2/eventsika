@@ -107,12 +107,14 @@ export default function LoginPage() {
 
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
               <Button
+                type="submit"
                 onClick={() => handleAuthAction("signIn")}
                 disabled={isLoading}
               >
                 {isLoading ? "Loading..." : "Login"}
               </Button>
               <Button
+                type="button"
                 onClick={() => handleAuthAction("signUp")}
                 disabled={isLoading}
                 variant="accent"

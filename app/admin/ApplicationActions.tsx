@@ -1,11 +1,13 @@
+// app/admin/ApplicationActions.tsx
 "use client";
 
-import { useFormStatus } from "react-dom";
+import { useFormState, useFormStatus } from "react-dom";
 import {
   approveOrganizerApplication,
   rejectOrganizerApplication,
 } from "@/app/action";
 import { Button } from "@/components/ui/Button";
+import { useActionState, useEffect } from "react";
 
 function ActionButton({
   variant,
@@ -37,21 +39,31 @@ export function ApplicationActions({
   applicationId: string;
   userId: string;
 }) {
-  
-  const handleApprove = async () => {
-    await approveOrganizerApplication(applicationId, userId);
-  };
+  // PERBAIKAN: Gunakan useActionState untuk menangani feedback
+  const [approveState, approveAction] = useActionState(
+    approveOrganizerApplication.bind(null, applicationId, userId),
+    null
+  );
+  const [rejectState, rejectAction] = useActionState(
+    rejectOrganizerApplication.bind(null, applicationId),
+    null
+  );
 
-  const handleReject = async () => {
-    await rejectOrganizerApplication(applicationId);
-  };
+  useEffect(() => {
+    if (approveState?.type === "error") {
+      alert(`Error approving: ${approveState.message}`);
+    }
+    if (rejectState?.type === "error") {
+      alert(`Error rejecting: ${rejectState.message}`);
+    }
+  }, [approveState, rejectState]);
 
   return (
     <div className="flex gap-2 w-full sm:w-auto">
-      <form action={handleApprove} className="flex-1">
+      <form action={approveAction} className="flex-1">
         <ActionButton variant="approve">Setujui</ActionButton>
       </form>
-      <form action={handleReject} className="flex-1">
+      <form action={rejectAction} className="flex-1">
         <ActionButton variant="reject">Tolak</ActionButton>
       </form>
     </div>

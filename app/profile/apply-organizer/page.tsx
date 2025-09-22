@@ -1,4 +1,3 @@
-// app/profile/apply-organizer/page.tsx
 "use client";
 
 import { useFormStatus } from "react-dom";
@@ -11,9 +10,10 @@ import Link from "next/link";
 import { FiArrowLeft } from "react-icons/fi";
 import { useActionState } from "react";
 
+// PERBAIKAN: initialState tidak boleh langsung 'success'
 const initialState = {
   message: "",
-  type: "success" as "success" | "error",
+  type: undefined,
 };
 
 function SubmitButton() {
@@ -50,7 +50,8 @@ export default function ApplyOrganizerPage() {
           </p>
         </div>
 
-        {state?.type === "success" ? (
+        {/* PERBAIKAN: Tampilkan pesan sukses hanya jika ada pesan */}
+        {state?.type === "success" && state.message ? (
           <div className="text-center p-4 bg-green-100 text-green-800 rounded-lg">
             <h2 className="font-semibold">Pengajuan Terkirim!</h2>
             <p className="mt-1 text-sm">{state.message}</p>

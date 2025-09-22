@@ -13,10 +13,20 @@ export async function getEvents(searchParams?: {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const interests: string[] =
-    user?.user_metadata.interests
-      ?.split(",")
-      .map((item: string) => item.trim()) || [];
+  let interests: string[] = [];
+  // PERBAIKAN: Ambil data 'interests' dari tabel 'profiles' jika pengguna sudah login
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("interests")
+      .eq("id", user.id)
+      .single();
+    if (profile?.interests) {
+      interests = profile.interests
+        .split(",")
+        .map((item: string) => item.trim());
+    }
+  }
 
   let query = supabase
     .from("events")
@@ -48,7 +58,6 @@ export async function getEvents(searchParams?: {
 
   if (error) {
     console.error("Error fetching events:", error);
-    // Di aplikasi nyata, bisa diganti dengan error boundary atau logging service
     throw new Error("Gagal memuat event.");
   }
 
@@ -62,7 +71,6 @@ export async function getEvents(searchParams?: {
 
 // Fungsi untuk mendapatkan satu event berdasarkan ID
 export async function getEventById(id: string): Promise<Event> {
-  // PENTING: Gunakan createClient dari server, bukan client
   const supabase = createClient();
 
   const { data, error } = await supabase

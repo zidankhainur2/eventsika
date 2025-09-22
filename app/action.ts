@@ -1,21 +1,39 @@
-// app/action.ts
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { FormState } from "./(types)/FormState"; // Buat tipe ini di file terpisah jika perlu
 
-// Tipe untuk state form
-export interface FormState {
-  message: string;
-  type: "success" | "error";
+// Helper untuk verifikasi Super Admin
+async function verifySuperAdmin(supabase: ReturnType<typeof createClient>) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.role !== "super_admin") throw new Error("Not authorized");
 }
 
-// Aksi untuk menambahkan event baru dengan validasi
 export async function addEvent(
   prevState: FormState,
   formData: FormData
 ): Promise<FormState> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { message: "Anda harus login untuk membuat event.", type: "error" };
+  }
+
   const eventData = {
     title: formData.get("title") as string,
     organizer: formData.get("organizer") as string,
@@ -27,29 +45,19 @@ export async function addEvent(
     image_url: formData.get("image_url") as string,
   };
 
-  // Validasi Sederhana di Server
-  if (
-    !eventData.title ||
-    !eventData.organizer ||
-    !eventData.event_date ||
-    !eventData.registration_link
-  ) {
+  if (!eventData.title || !eventData.organizer || !eventData.event_date) {
     return {
       message: "Field yang wajib diisi tidak boleh kosong.",
       type: "error",
     };
   }
 
-  // Validasi tanggal tidak boleh di masa lalu
-  if (new Date(eventData.event_date) < new Date()) {
-    return {
-      message: "Tanggal event tidak boleh di masa lalu.",
-      type: "error",
-    };
-  }
-
-  const supabase = createClient();
-  const { error } = await supabase.from("events").insert([eventData]);
+  const { error } = await supabase.from("events").insert([
+    {
+      ...eventData,
+      organizer_id: user.id, // PERBAIKAN: Tambahkan ID penyelenggara
+    },
+  ]);
 
   if (error) {
     console.error("Error inserting data:", error);
@@ -60,7 +68,7 @@ export async function addEvent(
   }
 
   revalidatePath("/");
-  redirect("/"); // Redirect hanya jika sukses total
+  redirect("/");
 }
 
 // Aksi untuk memperbarui preferensi user dengan validasi
@@ -163,76 +171,55 @@ export async function submitOrganizerApplication(
 
 export async function approveOrganizerApplication(
   applicationId: string,
-  userId: string
-) {
+  userId: string,
+  prevState: FormState | null,
+  formData: FormData
+): Promise<FormState | null> {
   const supabase = createClient();
+  try {
+    await verifySuperAdmin(supabase);
 
-  // Pastikan hanya super_admin yang bisa menjalankan ini
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-  if (profile?.role !== "super_admin") throw new Error("Not authorized");
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .update({ role: "organizer" })
+      .eq("id", userId);
+    if (profileError) throw profileError;
 
-  // 1. Ubah peran di tabel 'profiles'
-  const { error: profileError } = await supabase
-    .from("profiles")
-    .update({ role: "organizer" })
-    .eq("id", userId);
-
-  if (profileError) {
-    console.error("Error updating profile role:", profileError);
-    return { message: "Gagal mengubah peran pengguna.", type: "error" };
+    const { error: appError } = await supabase
+      .from("organizer_applications")
+      .update({ status: "approved" })
+      .eq("id", applicationId);
+    if (appError) throw appError;
+  } catch (error: unknown) {
+    const message =
+      error instanceof Error ? error.message : "Terjadi kesalahan.";
+    return { message, type: "error" };
   }
-
-  // 2. Ubah status di tabel 'organizer_applications'
-  const { error: appError } = await supabase
-    .from("organizer_applications")
-    .update({ status: "approved" })
-    .eq("id", applicationId);
-
-  if (appError) {
-    console.error("Error updating application status:", appError);
-    // Rollback? Tergantung kebutuhan, untuk sekarang kita log saja.
-    return { message: "Gagal memperbarui status pengajuan.", type: "error" };
-  }
-
-  revalidatePath("/admin"); // Refresh halaman admin
-  revalidatePath("/profile"); // Refresh halaman profil user terkait
+  revalidatePath("/admin");
+  revalidatePath("/profile");
+  return null;
 }
 
-// Fungsi untuk MENOLAK pengajuan
-export async function rejectOrganizerApplication(applicationId: string) {
+export async function rejectOrganizerApplication(
+  applicationId: string,
+  prevState: FormState | null,
+  formData: FormData
+): Promise<FormState | null> {
   const supabase = createClient();
-
-  // Security check
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-  if (profile?.role !== "super_admin") throw new Error("Not authorized");
-
-  const { error } = await supabase
-    .from("organizer_applications")
-    .update({ status: "rejected" })
-    .eq("id", applicationId);
-
-  if (error) {
-    console.error("Error rejecting application:", error);
-    return { message: "Gagal menolak pengajuan.", type: "error" };
+  try {
+    await verifySuperAdmin(supabase);
+    const { error } = await supabase
+      .from("organizer_applications")
+      .update({ status: "rejected" })
+      .eq("id", applicationId);
+    if (error) throw error;
+  } catch (error: unknown) {
+    const message =
+      error instanceof Error ? error.message : "Terjadi kesalahan.";
+    return { message, type: "error" };
   }
-
   revalidatePath("/admin");
+  return null;
 }
 
 // Aksi untuk logout

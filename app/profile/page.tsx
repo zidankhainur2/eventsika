@@ -92,7 +92,7 @@ export default async function ProfilePage() {
             </p>
             <Link
               href="/profile/apply-organizer"
-              className="inline-block w-auto px-6 py-2 rounded-lg font-bold transition-colors shadow-md bg-accent hover:bg-yellow-500 text-on-accent"
+              className="inline-block w-auto px-6 py-2 rounded-lg font-bold transition-colors shadow-md bg-accent hover:bg-yellow-500 text-on-accent disabled:opacity-50"
             >
               Ajukan Sekarang
             </Link>
