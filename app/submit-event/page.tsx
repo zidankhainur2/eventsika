@@ -1,4 +1,7 @@
 // app/submit-event/page.tsx
+"use client";
+
+import { useFormStatus } from "react-dom";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
@@ -6,6 +9,7 @@ import { Label } from "@/components/ui/Label";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { addEvent } from "../action";
+import { useActionState } from "react";
 
 const CATEGORIES = [
   "Seminar",
@@ -16,7 +20,24 @@ const CATEGORIES = [
   "Olahraga",
 ];
 
+const initialState = {
+  message: "",
+  type: "success" as "success" | "error",
+};
+
+// Komponen tombol terpisah untuk mengakses status form
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" disabled={pending}>
+      {pending ? "Mengirim..." : "Submit Event"}
+    </Button>
+  );
+}
+
 export default function SubmitEventPage() {
+  const [state, formAction] = useActionState(addEvent, initialState);
+
   return (
     <main className="py-8 sm:py-12">
       <Card className="max-w-2xl mx-auto">
@@ -27,7 +48,8 @@ export default function SubmitEventPage() {
           </p>
         </div>
 
-        <form action={addEvent} className="space-y-8">
+        <form action={formAction} className="space-y-8">
+          {/* ... fieldset dan input lainnya tetap sama ... */}
           <fieldset className="space-y-4">
             <legend className="font-semibold text-lg text-primary mb-2">
               Informasi Dasar
@@ -109,8 +131,20 @@ export default function SubmitEventPage() {
             </div>
           </fieldset>
 
+          {state?.message && (
+            <p
+              className={`text-sm p-3 rounded-md ${
+                state.type === "error"
+                  ? "bg-red-100 text-red-700"
+                  : "bg-green-100 text-green-700"
+              }`}
+            >
+              {state.message}
+            </p>
+          )}
+
           <div className="pt-4">
-            <Button type="submit">Submit Event</Button>
+            <SubmitButton />
           </div>
         </form>
       </Card>

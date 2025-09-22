@@ -1,12 +1,10 @@
 // middleware.ts
-import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
+    request: { headers: request.headers },
   });
 
   const supabase = createServerClient(
@@ -17,21 +15,17 @@ export async function middleware(request: NextRequest) {
         get(name: string) {
           return request.cookies.get(name)?.value;
         },
-        set(name: string, value: string, options: CookieOptions) {
+        set(name, value, options) {
           request.cookies.set({ name, value, ...options });
           response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
+            request: { headers: request.headers },
           });
           response.cookies.set({ name, value, ...options });
         },
-        remove(name: string, options: CookieOptions) {
+        remove(name, options) {
           request.cookies.set({ name, value: "", ...options });
           response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
+            request: { headers: request.headers },
           });
           response.cookies.set({ name, value: "", ...options });
         },
@@ -39,7 +33,17 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  await supabase.auth.getSession();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const protectedRoutes = ["/profile", "/submit-event"];
+
+  // Jika pengguna tidak login dan mencoba mengakses rute yang dilindungi
+  if (!user && protectedRoutes.includes(request.nextUrl.pathname)) {
+    // Arahkan ke halaman login
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
 
   return response;
 }
