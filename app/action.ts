@@ -3,7 +3,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { FormState } from "./(types)/FormState"; // Buat tipe ini di file terpisah jika perlu
+import { FormState } from "./(types)/FormState";
 import { headers } from "next/headers";
 
 // Helper untuk verifikasi Super Admin
@@ -35,6 +35,38 @@ export async function addEvent(
     return { message: "Anda harus login untuk membuat event.", type: "error" };
   }
 
+  const imageFile = formData.get("image_file") as File;
+
+  // Validasi file
+  if (!imageFile || imageFile.size === 0) {
+    return { message: "Gambar poster wajib diisi.", type: "error" };
+  }
+  if (imageFile.size > 2 * 1024 * 1024) {
+    // Batas 2MB
+    return {
+      message: "Ukuran gambar tidak boleh lebih dari 2MB.",
+      type: "error",
+    };
+  }
+
+  // Unggah gambar ke Supabase Storage
+  const fileExt = imageFile.name.split(".").pop();
+  const filePath = `${user.id}/${Date.now()}.${fileExt}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from("event-posters")
+    .upload(filePath, imageFile);
+
+  if (uploadError) {
+    console.error("Upload error:", uploadError);
+    return { message: "Gagal mengunggah gambar.", type: "error" };
+  }
+
+  // Dapatkan URL publik dari gambar yang baru diunggah
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from("event-posters").getPublicUrl(filePath);
+
   const eventData = {
     title: formData.get("title") as string,
     organizer: formData.get("organizer") as string,
@@ -43,7 +75,8 @@ export async function addEvent(
     event_date: formData.get("event_date") as string,
     description: formData.get("description") as string,
     registration_link: formData.get("registration_link") as string,
-    image_url: formData.get("image_url") as string,
+    image_url: publicUrl, // Gunakan URL dari Supabase Storage
+    organizer_id: user.id,
   };
 
   if (!eventData.title || !eventData.organizer || !eventData.event_date) {
@@ -56,7 +89,7 @@ export async function addEvent(
   const { error } = await supabase.from("events").insert([
     {
       ...eventData,
-      organizer_id: user.id, // PERBAIKAN: Tambahkan ID penyelenggara
+      organizer_id: user.id,
     },
   ]);
 
@@ -72,7 +105,6 @@ export async function addEvent(
   redirect("/");
 }
 
-// Aksi untuk memperbarui preferensi user dengan validasi
 export async function updateUserPreferences(
   prevState: FormState,
   formData: FormData
@@ -163,7 +195,7 @@ export async function submitOrganizerApplication(
     };
   }
 
-  revalidatePath("/profile"); // Perbarui cache halaman profil
+  revalidatePath("/profile");
   return {
     message: "Terima kasih! Pengajuan Anda akan segera kami tinjau.",
     type: "success",
@@ -238,7 +270,6 @@ export async function signUpWithRedirect(formData: FormData) {
     email,
     password,
     options: {
-      // Email verifikasi akan mengarahkan ke halaman login setelah dikonfirmasi
       emailRedirectTo: `${origin}/login`,
     },
   });
@@ -248,12 +279,11 @@ export async function signUpWithRedirect(formData: FormData) {
     return { error: error.message };
   }
 
-  // Jika berhasil, langsung arahkan ke halaman onboarding untuk memilih minat
   return redirect("/onboarding");
 }
 
 export async function saveUserInterests(formData: FormData) {
-  "use server"; // Pastikan ini ada jika belum di paling atas
+  "use server";
 
   const supabase = createClient();
   const {
@@ -280,11 +310,10 @@ export async function saveUserInterests(formData: FormData) {
     return { error: "Gagal menyimpan minat Anda." };
   }
 
-  revalidatePath("/"); // Revalidate halaman utama untuk personalisasi
-  redirect("/"); // Arahkan ke halaman utama
+  revalidatePath("/");
+  redirect("/");
 }
 
-// Aksi untuk logout
 export async function signOut() {
   const supabase = createClient();
   await supabase.auth.signOut();

@@ -1,7 +1,8 @@
-// app/submit-event/page.tsx
 "use client";
 
+import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
+import Image from "next/image";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
@@ -9,7 +10,6 @@ import { Label } from "@/components/ui/Label";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { addEvent } from "../action";
-import { useActionState } from "react";
 
 const CATEGORIES = [
   "Seminar",
@@ -22,10 +22,9 @@ const CATEGORIES = [
 
 const initialState = {
   message: "",
-  type: "success" as "success" | "error",
+  type: undefined,
 };
 
-// Komponen tombol terpisah untuk mengakses status form
 function SubmitButton() {
   const { pending } = useFormStatus();
   return (
@@ -37,6 +36,20 @@ function SubmitButton() {
 
 export default function SubmitEventPage() {
   const [state, formAction] = useActionState(addEvent, initialState);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setImagePreview(null);
+    }
+  };
 
   return (
     <main className="py-8 sm:py-12">
@@ -49,7 +62,6 @@ export default function SubmitEventPage() {
         </div>
 
         <form action={formAction} className="space-y-8">
-          {/* ... fieldset dan input lainnya tetap sama ... */}
           <fieldset className="space-y-4">
             <legend className="font-semibold text-lg text-primary mb-2">
               Informasi Dasar
@@ -63,13 +75,26 @@ export default function SubmitEventPage() {
               <Input type="text" name="organizer" id="organizer" required />
             </div>
             <div>
-              <Label htmlFor="image_url">URL Gambar Poster</Label>
+              <Label htmlFor="image_file">Gambar Poster</Label>
               <Input
-                type="url"
-                name="image_url"
-                id="image_url"
-                placeholder="https://"
+                type="file"
+                name="image_file"
+                id="image_file"
+                required
+                accept="image/png, image/jpeg, image/webp"
+                onChange={handleImageChange}
+                className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
               />
+              {imagePreview && (
+                <div className="mt-4 relative w-full h-64 rounded-lg overflow-hidden border">
+                  <Image
+                    src={imagePreview}
+                    alt="Pratinjau Poster"
+                    fill
+                    className="object-contain"
+                  />
+                </div>
+              )}
             </div>
           </fieldset>
 
