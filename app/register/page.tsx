@@ -1,38 +1,36 @@
-// app/login/page.tsx
+// app/register/page.tsx
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/utils/supabase/client";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { Button } from "@/components/ui/Button";
 import { MdEmail, MdLock } from "react-icons/md";
+import { signUpWithRedirect } from "@/app/action"; // Kita akan buat action ini
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
-  const supabase = createClient();
 
-  const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    if (error) {
-      setError(error.message);
-    } else {
-      router.refresh(); // Arahkan ke homepage setelah login
+    const formData = new FormData();
+    formData.append("email", email);
+    formData.append("password", password);
+
+    const result = await signUpWithRedirect(formData);
+
+    if (result?.error) {
+      setError(result.error);
     }
+
     setIsLoading(false);
   };
 
@@ -41,10 +39,12 @@ export default function LoginPage() {
       <Card className="max-w-md w-full">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-primary">EventSika</h1>
-          <p className="text-neutral-dark/70 mt-2">Masuk untuk Melanjutkan</p>
+          <p className="text-neutral-dark/70 mt-2">
+            Temukan Semua Event Kampus di Satu Tempat
+          </p>
         </div>
 
-        <form onSubmit={handleSignIn} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div className="relative">
             <Label htmlFor="email">Email</Label>
             <MdEmail className="absolute top-10 left-3 text-gray-400" />
@@ -60,7 +60,7 @@ export default function LoginPage() {
             />
           </div>
           <div className="relative">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">Password (minimal 6 karakter)</Label>
             <MdLock className="absolute top-10 left-3 text-gray-400" />
             <Input
               type="password"
@@ -77,17 +77,17 @@ export default function LoginPage() {
           {error && <p className="text-red-500 text-sm text-center">{error}</p>}
 
           <div className="pt-4">
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? "Loading..." : "Login"}
+            <Button type="submit" disabled={isLoading} variant="accent">
+              {isLoading ? "Mendaftar..." : "Daftar"}
             </Button>
           </div>
           <p className="text-center text-sm text-gray-600">
-            Belum punya akun?{" "}
+            Sudah punya akun?{" "}
             <Link
-              href="/register"
+              href="/login"
               className="font-semibold text-primary hover:underline"
             >
-              Daftar di sini
+              Masuk
             </Link>
           </p>
         </form>

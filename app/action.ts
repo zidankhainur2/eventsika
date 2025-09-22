@@ -4,6 +4,7 @@ import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { FormState } from "./(types)/FormState"; // Buat tipe ini di file terpisah jika perlu
+import { headers } from "next/headers";
 
 // Helper untuk verifikasi Super Admin
 async function verifySuperAdmin(supabase: ReturnType<typeof createClient>) {
@@ -220,6 +221,67 @@ export async function rejectOrganizerApplication(
   }
   revalidatePath("/admin");
   return null;
+}
+
+export async function signUpWithRedirect(formData: FormData) {
+  const supabase = createClient();
+
+  const email = formData.get("email") as string;
+  const password = formData.get("password") as string;
+  const origin = headers().get("origin");
+
+  if (!email || !password) {
+    return { error: "Email dan password wajib diisi." };
+  }
+
+  const { error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      // Email verifikasi akan mengarahkan ke halaman login setelah dikonfirmasi
+      emailRedirectTo: `${origin}/login`,
+    },
+  });
+
+  if (error) {
+    console.error("Sign up error:", error);
+    return { error: error.message };
+  }
+
+  // Jika berhasil, langsung arahkan ke halaman onboarding untuk memilih minat
+  return redirect("/onboarding");
+}
+
+export async function saveUserInterests(formData: FormData) {
+  "use server"; // Pastikan ini ada jika belum di paling atas
+
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Anda harus login untuk menyimpan minat." };
+  }
+
+  const interests = formData.get("interests") as string;
+
+  if (!interests || interests.split(",").length < 3) {
+    return { error: "Silakan pilih minimal 3 minat." };
+  }
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ interests: interests })
+    .eq("id", user.id);
+
+  if (error) {
+    console.error("Error saving interests:", error);
+    return { error: "Gagal menyimpan minat Anda." };
+  }
+
+  revalidatePath("/"); // Revalidate halaman utama untuk personalisasi
+  redirect("/"); // Arahkan ke halaman utama
 }
 
 // Aksi untuk logout
