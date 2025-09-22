@@ -10,5 +10,12 @@ export type Event = {
   organizer: string;
   category: string;
   registration_link: string;
-  image_url: string | null; // Tambahkan ini
+  image_url: string | null; 
+};
+
+export type Profile = {
+  id: string;
+  major: string | null;
+  interests: string | null;
+  role: 'user' | 'organizer' | 'super_admin';
 };
