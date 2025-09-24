@@ -10,10 +10,14 @@ import Link from "next/link";
 import { FiArrowLeft } from "react-icons/fi";
 import { useActionState } from "react";
 
-// PERBAIKAN: initialState tidak boleh langsung 'success'
-const initialState = {
+type FormState = {
+  message: string;
+  type: "success" | "error" | null;
+};
+
+const initialState: FormState = {
   message: "",
-  type: undefined,
+  type: null,
 };
 
 function SubmitButton() {
@@ -26,7 +30,7 @@ function SubmitButton() {
 }
 
 export default function ApplyOrganizerPage() {
-  const [state, formAction] = useActionState(
+  const [state, formAction] = useActionState<FormState, FormData>(
     submitOrganizerApplication,
     initialState
   );
