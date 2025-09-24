@@ -260,7 +260,7 @@ export async function signUpWithRedirect(formData: FormData) {
 
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
-  const origin = headers().get("origin");
+  const origin = (await headers()).get("origin");
 
   if (!email || !password) {
     return { error: "Email dan password wajib diisi." };
