@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { FiMenu, FiX } from "react-icons/fi";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, Variants } from "framer-motion";
 import { usePathname } from "next/navigation";
 import { signOut } from "@/app/action";
 
@@ -16,9 +16,21 @@ export default function MobileMenu({ user }: { user: any }) {
     setIsOpen(false);
   }, [pathname]);
 
-  const menuVariants = {
-    hidden: { x: "100%", transition: { type: "tween", ease: "easeOut" } },
-    visible: { x: 0, transition: { type: "tween", ease: "easeIn" } },
+  const menuVariants: Variants = {
+    hidden: {
+      x: 100, // pakai number, bukan "100%"
+      transition: {
+        type: "tween", // ini valid, sesuai union type Framer Motion
+        ease: "easeInOut",
+      },
+    },
+    visible: {
+      x: 0,
+      transition: {
+        type: "tween",
+        ease: "easeInOut",
+      },
+    },
   };
 
   return (
