@@ -20,9 +20,16 @@ const CATEGORIES = [
   "Olahraga",
 ];
 
-const initialState = {
+// 🔧 Definisikan tipe FormState
+type FormState = {
+  message: string;
+  type: "success" | "error" | null;
+};
+
+// 🔧 initialState harus sesuai FormState
+const initialState: FormState = {
   message: "",
-  type: undefined,
+  type: null,
 };
 
 function SubmitButton() {
@@ -35,7 +42,11 @@ function SubmitButton() {
 }
 
 export default function SubmitEventPage() {
-  const [state, formAction] = useActionState(addEvent, initialState);
+  // 🔧 Tambah generic agar state sesuai FormState
+  const [state, formAction] = useActionState<FormState, FormData>(
+    addEvent,
+    initialState
+  );
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
