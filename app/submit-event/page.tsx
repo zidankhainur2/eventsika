@@ -11,15 +11,7 @@ import { Label } from "@/components/ui/Label";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { addEvent } from "../action";
-
-const CATEGORIES = [
-  "Seminar",
-  "Workshop",
-  "Lomba",
-  "Webinar",
-  "Konser",
-  "Olahraga",
-];
+import { CATEGORIES } from "@/lib/constants";
 
 // 🔧 Definisikan tipe FormState
 type FormState = {

@@ -10,12 +10,14 @@ export type Event = {
   organizer: string;
   category: string;
   registration_link: string;
-  image_url: string | null; 
+  image_url: string | null;
 };
 
 export type Profile = {
   id: string;
+  full_name: string | null;
+  avatar_url: string | null;
   major: string | null;
   interests: string | null;
-  role: 'user' | 'organizer' | 'super_admin';
+  role: "user" | "organizer" | "super_admin";
 };

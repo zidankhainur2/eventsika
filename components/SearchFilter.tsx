@@ -6,15 +6,7 @@ import { useDebouncedCallback } from "use-debounce";
 import { Input } from "./ui/Input";
 import { Select } from "./ui/Select";
 import { FiSearch, FiTag } from "react-icons/fi";
-
-const CATEGORIES = [
-  "Seminar",
-  "Workshop",
-  "Lomba",
-  "Webinar",
-  "Konser",
-  "Olahraga",
-];
+import { CATEGORIES } from "@/lib/constants";
 
 export default function SearchFilter() {
   const searchParams = useSearchParams();

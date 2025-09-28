@@ -1,4 +1,3 @@
-// src/app/layout.tsx
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import "./globals.css";
@@ -9,6 +8,7 @@ import MobileMenu from "@/components/MobileMenu";
 import { createClient } from "@/utils/supabase/server";
 import { Toaster } from "sonner";
 import { ProgressBar } from "@/components/ProgressBar";
+import { type Profile } from "@/lib/types";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -30,9 +30,8 @@ export default async function RootLayout({
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Ambil profil untuk cek peran
   const { data: profile } = user
-    ? await supabase.from("profiles").select("role").eq("id", user.id).single()
+    ? await supabase.from("profiles").select("*").eq("id", user.id).single()
     : { data: null };
 
   return (
@@ -48,7 +47,6 @@ export default async function RootLayout({
 
             {/* Navigasi Desktop */}
             <div className="hidden md:flex items-center gap-6">
-              {/* Tampilkan link Admin jika rolenya super_admin */}
               {profile?.role === "super_admin" && (
                 <Link
                   href="/admin"
@@ -57,17 +55,18 @@ export default async function RootLayout({
                   Admin
                 </Link>
               )}
-              <Link
-                href="/submit-event"
-                className="text-sm font-medium text-neutral-dark/80 hover:text-primary transition-colors"
-              >
-                Submit Event
-              </Link>
+              {(profile?.role === "organizer" ||
+                profile?.role === "super_admin") && (
+                <Link
+                  href="/submit-event"
+                  className="text-sm font-medium text-neutral-dark/80 hover:text-primary transition-colors"
+                >
+                  Submit Event
+                </Link>
+              )}
               <AuthButton user={user} />
             </div>
-
-            {/* Navigasi Mobile (bisa ditambahkan link admin juga jika perlu) */}
-            <MobileMenu user={user} />
+            <MobileMenu user={user} profile={profile as Profile | null} />
           </nav>
         </header>
         <div className="w-full max-w-6xl mx-auto px-4">{children}</div>
