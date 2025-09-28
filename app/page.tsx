@@ -1,4 +1,3 @@
-// app/page.tsx
 import Hero from "@/components/Hero";
 import {
   getRecommendedEvents,
@@ -6,7 +5,6 @@ import {
   getAllUpcomingEvents,
 } from "@/lib/supabase";
 import EventCarousel from "@/components/EventCarousel";
-import AnimatedEventGrid from "@/components/AnimatedEventGrid";
 import { createClient } from "@/utils/supabase/server";
 import { EmptyState } from "@/components/EmptyState";
 import Link from "next/link";
@@ -41,18 +39,24 @@ export default async function HomePage({
     <main className="min-h-screen py-8 sm:py-12">
       <Hero />
       <div id="events" className="mt-12 space-y-8">
-        {/* Carousel 1: Rekomendasi */}
-        <EventCarousel title="Rekomendasi Untukmu" events={recommendedEvents} />
+        <EventCarousel
+          title="Rekomendasi Untukmu"
+          events={recommendedEvents}
+          viewAllLink="/events/recommended"
+        />
 
-        {/* Carousel 2: Terkait Jurusan */}
-        <EventCarousel title="Terkait Jurusanmu" events={majorRelatedEvents} />
+        <EventCarousel
+          title="Terkait Jurusanmu"
+          events={majorRelatedEvents}
+          viewAllLink="/events/major"
+        />
 
-        {/* Bagian 3: Semua Event - MENGGUNAKAN EVENTCAROUSEL */}
         <section>
           {allUpcomingEvents.length > 0 ? (
             <EventCarousel
               title="Semua Event Mendatang"
               events={allUpcomingEvents}
+              viewAllLink="/events/upcoming"
             />
           ) : isSearching ? (
             <EmptyState

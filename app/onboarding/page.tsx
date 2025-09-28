@@ -1,13 +1,11 @@
-// app/onboarding/page.tsx
 "use client";
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { saveUserInterests } from "@/app/action"; // Action yang akan kita buat
+import { saveUserInterests } from "@/app/action"; 
 
-// Daftar minat yang bisa dipilih
 const INTEREST_OPTIONS = [
   "Teknologi",
   "Musik",
@@ -42,10 +40,8 @@ export default function OnboardingPage() {
     startTransition(async () => {
       const result = await saveUserInterests(formData);
       if (result?.error) {
-        // Di aplikasi nyata, Anda bisa menampilkan pesan error
         alert(result.error);
       } else {
-        // Jika sukses, Supabase akan redirect, tapi kita beri fallback
         router.push("/");
       }
     });

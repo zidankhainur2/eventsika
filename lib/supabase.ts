@@ -21,23 +21,10 @@ export async function getRecommendedEvents(
 ): Promise<Event[]> {
   if (!user) return [];
 
-  const profile = await getCurrentUserProfile(supabase, user);
-  const interests = profile?.interests
-    ? profile.interests.split(",").map((i: string) => i.trim())
-    : [];
-
-  if (interests.length === 0) return [];
-
-  const interestFilter = interests
-    .map((interest: string) => `category.ilike.%${interest}%`)
-    .join(",");
-
-  const { data, error } = await supabase
-    .from("events")
-    .select("*")
-    .or(interestFilter)
-    .gte("event_date", new Date().toISOString())
-    .limit(10);
+  const { data, error } = await supabase.rpc(
+    "get_recommended_events_for_user",
+    { p_user_id: user.id }
+  );
 
   if (error) {
     console.error("Error fetching recommended events:", error);
@@ -52,17 +39,10 @@ export async function getMajorRelatedEvents(
 ): Promise<Event[]> {
   if (!user) return [];
 
-  const profile = await getCurrentUserProfile(supabase, user);
-  const major = profile?.major;
-
-  if (!major) return [];
-
-  const { data, error } = await supabase
-    .from("events")
-    .select("*")
-    .ilike("organizer", `%${major}%`)
-    .gte("event_date", new Date().toISOString())
-    .limit(10);
+  const { data, error } = await supabase.rpc(
+    "get_major_related_events_for_user",
+    { p_user_id: user.id }
+  );
 
   if (error) {
     console.error("Error fetching major related events:", error);

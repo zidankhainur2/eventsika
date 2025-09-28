@@ -1,17 +1,19 @@
-// src/components/AuthButton.tsx
 import Link from "next/link";
 import { signOut } from "@/app/action";
 
 export default function AuthButton({ user }: { user: any }) {
+  const displayName =
+    user?.user_metadata?.full_name || user?.full_name || user?.email;
+
   return user ? (
     <div className="flex items-center gap-4">
       <Link
         href="/profile"
         className="text-sm font-medium text-neutral-dark/80 hover:text-primary transition-colors"
-        title={user.email}
+        title={displayName}
       >
         <span className="hidden lg:inline truncate max-w-[150px]">
-          Halo, {user.email}
+          Halo, {displayName}
         </span>
         <span className="lg:hidden">Profil</span>
       </Link>

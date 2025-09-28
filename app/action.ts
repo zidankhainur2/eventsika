@@ -266,26 +266,46 @@ export async function rejectOrganizerApplication(
 
 export async function signUpWithRedirect(formData: FormData) {
   const supabase = createClient();
-
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
+  const fullName = formData.get("full_name") as string;
+  const major = formData.get("major") as string;
   const origin = (await headers()).get("origin");
 
-  if (!email || !password) {
-    return { error: "Email dan password wajib diisi." };
+  if (!email || !password || !fullName || !major) {
+    return { error: "Semua kolom wajib diisi." };
   }
 
-  const { error } = await supabase.auth.signUp({
+  const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
     email,
     password,
     options: {
+      data: {
+        full_name: fullName,
+        major: major,
+      },
       emailRedirectTo: `${origin}/login`,
     },
   });
 
-  if (error) {
-    console.error("Sign up error:", error);
-    return { error: error.message };
+  if (signUpError) {
+    console.error("Sign up error:", signUpError);
+    return { error: signUpError.message };
+  }
+
+  if (signUpData.user) {
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .update({
+        full_name: fullName,
+        major: major,
+      })
+      .eq("id", signUpData.user.id);
+
+    if (profileError) {
+      console.error("Error updating profile on signup:", profileError);
+      return { error: "Gagal menyimpan data profil." };
+    }
   }
 
   return redirect("/onboarding");
@@ -321,6 +341,64 @@ export async function saveUserInterests(formData: FormData) {
 
   revalidatePath("/");
   redirect("/");
+}
+
+export async function updateProfile(
+  prevState: FormState,
+  formData: FormData
+): Promise<FormState> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { message: "Anda harus login.", type: "error" };
+  }
+
+  const fullName = formData.get("full_name") as string;
+  const major = formData.get("major") as string;
+  const avatarFile = formData.get("avatar_url") as File;
+
+  let avatarUrl = formData.get("current_avatar_url") as string;
+
+  if (avatarFile && avatarFile.size > 0) {
+    if (avatarFile.size > 1 * 1024 * 1024) {
+      // Batas 1MB
+      return {
+        message: "Ukuran avatar tidak boleh lebih dari 1MB.",
+        type: "error",
+      };
+    }
+    const fileExt = avatarFile.name.split(".").pop();
+    const filePath = `${user.id}/avatar.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("avatars")
+      .upload(filePath, avatarFile, { upsert: true });
+
+    if (uploadError) {
+      return { message: "Gagal mengunggah avatar.", type: "error" };
+    }
+
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from("avatars").getPublicUrl(filePath);
+
+    avatarUrl = `${publicUrl}?t=${new Date().getTime()}`;
+  }
+
+  const { error: updateError } = await supabase
+    .from("profiles")
+    .update({ full_name: fullName, major, avatar_url: avatarUrl })
+    .eq("id", user.id);
+
+  if (updateError) {
+    return { message: "Gagal memperbarui profil.", type: "error" };
+  }
+
+  revalidatePath("/profile");
+  return { message: "Profil berhasil diperbarui!", type: "success" };
 }
 
 export async function signOut() {
