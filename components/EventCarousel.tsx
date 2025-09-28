@@ -1,8 +1,8 @@
-// components/EventCarousel.tsx
 import { type Event } from "@/lib/types";
 import EventCard from "./EventCard";
 import Link from "next/link";
 import { FiArrowRight } from "react-icons/fi";
+import { Button } from "./ui/Button";
 
 interface EventCarouselProps {
   title: string;
@@ -23,44 +23,41 @@ export default function EventCarousel({
   const desktopLimit = 5;
 
   return (
-    <section className="mb-12">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-bold text-primary">{title}</h2>
-        {/* Tampilkan link "Lihat Semua" di desktop jika event melebihi batas */}
-        {events.length > desktopLimit && (
-          <Link
-            href={viewAllLink}
-            className="hidden sm:inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline"
-          >
-            Lihat Semua <FiArrowRight />
-          </Link>
-        )}
-      </div>
+  <section className="mb-12">
+    <div className="flex justify-between items-center mb-4">
+      <h2 className="text-2xl font-bold text-primary">{title}</h2>
+      {events.length > desktopLimit && (
+        <Link href={viewAllLink} className="hidden sm:inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline">
+          Lihat Semua <FiArrowRight />
+        </Link>
+      )}
+    </div>
 
-      <div className="grid grid-cols-2 gap-4 sm:flex sm:gap-6 sm:overflow-x-auto sm:pb-4">
-        {events.slice(0, desktopLimit).map((event, index) => (
-          <div
-            key={event.id}
-            className={`w-full flex-shrink-0 sm:w-72 ${
-              index >= mobileLimit ? "hidden sm:block" : ""
-            }`}
-          >
-            <EventCard event={event} />
-          </div>
+    {/* Mobile Version */}
+    <div className="block sm:hidden">
+      <div className="grid grid-cols-2 gap-4 mb-6">
+        {events.slice(0, mobileLimit).map((event) => (
+          <EventCard key={event.id} event={event} />
         ))}
       </div>
-
-      {/* Tombol "Lihat Semua" khusus untuk mobile */}
+      
       {events.length > mobileLimit && (
-        <div className="mt-6 sm:hidden text-center">
-          <Link
-            href={viewAllLink}
-            className="inline-block w-full max-w-xs mx-auto px-6 py-3 rounded-lg font-bold transition-colors shadow-md bg-gray-100 hover:bg-gray-200 text-neutral-dark"
-          >
-            Lihat Semua
+        <div className="text-center">
+          <Link href={viewAllLink} className="bg-accent text-on-accent px-6 py-3 rounded-lg font-semibold hover:bg-yellow-500 transition-all duration-200 inline-block">
+            Lihat Semua Event
           </Link>
         </div>
       )}
-    </section>
-  );
+    </div>
+
+    {/* Desktop Version */}
+    <div className="hidden sm:block">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        {events.slice(0, desktopLimit).map((event) => (
+          <EventCard key={event.id} event={event} />
+        ))}
+      </div>
+    </div>
+  </section>
+);
 }

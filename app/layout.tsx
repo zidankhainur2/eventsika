@@ -15,9 +15,56 @@ const poppins = Poppins({
   weight: ["400", "500", "600", "700"],
 });
 
+// SEO: Metadata yang lebih kaya dan dinamis
 export const metadata: Metadata = {
-  title: "EventSika - Info Event Kampus",
-  description: "Platform informasi event kampus UNSIKA.",
+  metadataBase: new URL("https://eventsika.vercel.app"), // Ganti dengan URL produksi Anda
+  title: {
+    default: "EventSika - Info Event Kampus",
+    template: `%s | EventSika`,
+  },
+  description:
+    "Platform informasi terpusat untuk semua event dan kegiatan di lingkungan kampus UNSIKA. Temukan seminar, workshop, dan acara lainnya.",
+  keywords: [
+    "event kampus",
+    "UNSIKA",
+    "seminar",
+    "workshop",
+    "mahasiswa",
+    "info event",
+  ],
+  authors: [
+    {
+      name: "Team EventSika",
+      url: "https://github.com/zidankhainur2/eventsika",
+    },
+  ],
+  creator: "Team EventSika",
+  publisher: "Team EventSika",
+  robots: "index, follow",
+  themeColor: "#800000",
+  openGraph: {
+    title: "EventSika - Info Event Kampus",
+    description:
+      "Platform informasi terpusat untuk semua event dan kegiatan di lingkungan kampus UNSIKA.",
+    url: "https://eventsika.vercel.app", // Ganti dengan URL produksi Anda
+    siteName: "EventSika",
+    images: [
+      {
+        url: "/hero-bg.jpg", // Ganti dengan URL gambar OG Anda
+        width: 1200,
+        height: 630,
+        alt: "EventSika Hero Image",
+      },
+    ],
+    locale: "id_ID",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "EventSika - Info Event Kampus",
+    description: "Semua info event kampus UNSIKA dalam satu platform.",
+    images: ["/hero-bg.jpg"], // Ganti dengan URL gambar Twitter Anda
+  },
 };
 
 export default async function RootLayout({
@@ -36,16 +83,27 @@ export default async function RootLayout({
 
   return (
     <html lang="id" className="scroll-smooth">
-      <body className={`${poppins.className} bg-neutral-light`}>
+      {/* UI/UX: Menggunakan flexbox untuk sticky footer */}
+      <body
+        className={`${poppins.className} bg-neutral-light flex flex-col min-h-screen`}
+      >
+        {/* Aksesibilitas: Skip to content link */}
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:z-50 top-0 left-0 bg-accent text-on-accent p-4"
+        >
+          Lewati ke konten utama
+        </a>
+
         <Toaster position="top-center" richColors />
         <ProgressBar />
+
         <header className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white/80 backdrop-blur-sm">
           <nav className="max-w-6xl mx-auto flex justify-between items-center h-16 px-4">
             <Link href="/" className="text-xl font-bold text-primary">
               EventSika
             </Link>
 
-            {/* Navigasi Desktop */}
             <div className="hidden md:flex items-center gap-6">
               {profile?.role === "super_admin" && (
                 <Link
@@ -69,7 +127,15 @@ export default async function RootLayout({
             <MobileMenu user={user} profile={profile as Profile | null} />
           </nav>
         </header>
-        <div className="w-full max-w-6xl mx-auto px-4">{children}</div>
+
+        {/* Struktur HTML: Menggunakan tag <main> dan id untuk skip link */}
+        <main
+          id="main-content"
+          className="w-full max-w-6xl mx-auto px-4 flex-grow"
+        >
+          {children}
+        </main>
+
         <Footer />
       </body>
     </html>

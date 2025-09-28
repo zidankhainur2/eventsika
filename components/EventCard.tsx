@@ -1,11 +1,10 @@
-// components/EventCard.tsx
 "use client";
 
 import Link from "next/link";
 import Image from "next/image";
 import { type Event } from "@/lib/types";
 import { motion } from "framer-motion";
-import { FaCalendarAlt, FaMapMarkerAlt } from "react-icons/fa"; // Impor ikon
+import { FaCalendarAlt, FaMapMarkerAlt } from "react-icons/fa";
 
 function InfoPill({
   icon,
@@ -16,7 +15,7 @@ function InfoPill({
 }) {
   if (!text) return null;
   return (
-    <div className="flex items-center gap-2 text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full">
+    <div className="flex items-center gap-2 text-xs text-gray-600">
       <span className="text-primary">{icon}</span>
       <span className="truncate">{text}</span>
     </div>
@@ -40,16 +39,16 @@ export default function EventCard({ event }: { event: Event }) {
   return (
     <motion.div
       variants={cardVariants}
-      className="bg-white rounded-xl shadow-md flex flex-col overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
+      className="bg-white rounded-xl shadow-md flex flex-col overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 group"
     >
       <Link href={`/event/${event.id}`} className="block">
         <div className="relative h-44 w-full">
           <Image
-            src={event.image_url || "/hero-background.jpg"}
+            src={event.image_url || "/hero-bg.jpg"}
             alt={`Poster for ${event.title}`}
             fill
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            className="object-cover"
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
           />
         </div>
       </Link>
@@ -60,7 +59,7 @@ export default function EventCard({ event }: { event: Event }) {
         <h2 className="text-lg font-bold text-neutral-dark mb-3 line-clamp-2 flex-grow">
           <Link href={`/event/${event.id}`}>{event.title}</Link>
         </h2>
-        <div className="flex flex-wrap gap-2 mb-4">
+        <div className="flex flex-col gap-2 mt-auto">
           <InfoPill
             icon={<FaCalendarAlt />}
             text={eventDate.toLocaleDateString("id-ID", {

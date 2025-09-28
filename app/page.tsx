@@ -1,5 +1,4 @@
 // app/page.tsx
-import SearchFilter from "@/components/SearchFilter";
 import Hero from "@/components/Hero";
 import {
   getRecommendedEvents,
@@ -41,10 +40,6 @@ export default async function HomePage({
   return (
     <main className="min-h-screen py-8 sm:py-12">
       <Hero />
-      <div className="mt-12">
-        <SearchFilter />
-      </div>
-
       <div id="events" className="mt-12 space-y-8">
         {/* Carousel 1: Rekomendasi */}
         <EventCarousel title="Rekomendasi Untukmu" events={recommendedEvents} />
@@ -52,13 +47,13 @@ export default async function HomePage({
         {/* Carousel 2: Terkait Jurusan */}
         <EventCarousel title="Terkait Jurusanmu" events={majorRelatedEvents} />
 
-        {/* Bagian 3: Semua Event */}
+        {/* Bagian 3: Semua Event - MENGGUNAKAN EVENTCAROUSEL */}
         <section>
-          <h2 className="text-2xl font-bold text-primary mb-4">
-            Semua Event Mendatang
-          </h2>
           {allUpcomingEvents.length > 0 ? (
-            <AnimatedEventGrid events={allUpcomingEvents} />
+            <EventCarousel
+              title="Semua Event Mendatang"
+              events={allUpcomingEvents}
+            />
           ) : isSearching ? (
             <EmptyState
               title="Event Tidak Ditemukan"

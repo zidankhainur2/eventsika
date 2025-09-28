@@ -1,27 +1,67 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-@theme {
-  --color-primary: #800000; /* Maroon Red */
-  --color-accent: #ffd700; /* Golden Yellow */
-  --color-on-accent: #332a00; /* Teks gelap di atas kuning */
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
 
-  --color-neutral-white: #ffffff;
-  --color-neutral-light: #f8f8f8;
-  --color-neutral-dark: #1a1a1a;
+  html {
+    scroll-behavior: smooth;
+  }
 
-  --font-sans: "Poppins", sans-serif;
+  body {
+    font-family: "Poppins", sans-serif;
+  }
+
+  html,
+  body,
+  #__next {
+    min-height: 100vh;
+  }
 }
 
+@layer components {
+  .btn-primary {
+    @apply bg-primary text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-900 transition-all duration-200;
+  }
+
+  .btn-accent {
+    @apply bg-accent text-on-accent px-6 py-3 rounded-lg font-semibold hover:bg-yellow-500 transition-all duration-200;
+  }
+}
+
+/* NProgress styling */
 #nprogress .bar {
-  background: var(--color-accent) !important;
+  background: #ffd700 !important;
   height: 3px !important;
 }
 
 #nprogress .peg {
-  box-shadow: 0 0 10px var(--color-accent), 0 0 5px var(--color-accent) !important;
+  box-shadow: 0 0 10px #ffd700, 0 0 5px #ffd700 !important;
 }
 
 #nprogress .spinner-icon {
-  border-top-color: var(--color-accent) !important;
-  border-left-color: var(--color-accent) !important;
+  border-top-color: #ffd700 !important;
+  border-left-color: #ffd700 !important;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }
