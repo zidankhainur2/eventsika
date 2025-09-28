@@ -5,6 +5,7 @@ import Footer from "@/components/Footer";
 import { Toaster } from "sonner";
 import { ProgressBar } from "@/components/ProgressBar";
 import Navbar from "@/components/Navbar";
+import { Suspense } from "react";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -84,7 +85,9 @@ export default function RootLayout({
         </a>
 
         <Toaster position="top-center" richColors />
-        <ProgressBar />
+        <Suspense fallback={null}>
+          <ProgressBar />
+        </Suspense>
 
         <Navbar />
 
