@@ -9,6 +9,9 @@ import {
 import EventCarousel from "@/components/EventCarousel";
 import AnimatedEventGrid from "@/components/AnimatedEventGrid";
 import { createClient } from "@/utils/supabase/server";
+import { EmptyState } from "@/components/EmptyState";
+import Link from "next/link";
+import { Button } from "@/components/ui/Button";
 
 export default async function HomePage({
   searchParams,
@@ -23,18 +26,17 @@ export default async function HomePage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Ekstrak nilai search dan category dari searchParams
   const search = searchParams?.search || "";
   const category = searchParams?.category || "";
 
-  // Ambil data untuk semua section secara paralel
-  // Panggil getAllUpcomingEvents dengan parameter
   const [recommendedEvents, majorRelatedEvents, allUpcomingEvents] =
     await Promise.all([
       getRecommendedEvents(supabase, user),
       getMajorRelatedEvents(supabase, user),
-      getAllUpcomingEvents(supabase, { search, category }), // Teruskan parameter di sini
+      getAllUpcomingEvents(supabase, { search, category }),
     ]);
+
+  const isSearching = search || category;
 
   return (
     <main className="min-h-screen py-8 sm:py-12">
@@ -57,16 +59,20 @@ export default async function HomePage({
           </h2>
           {allUpcomingEvents.length > 0 ? (
             <AnimatedEventGrid events={allUpcomingEvents} />
+          ) : isSearching ? (
+            <EmptyState
+              title="Event Tidak Ditemukan"
+              message="Coba gunakan kata kunci atau filter yang berbeda untuk menemukan apa yang Anda cari."
+            />
           ) : (
-            <div className="text-center bg-white p-8 rounded-lg shadow-md">
-              <p className="text-2xl mb-4">👀</p>
-              <p className="font-semibold text-neutral-dark mb-2">
-                Belum ada event mendatang.
-              </p>
-              <p className="text-sm text-gray-500">
-                Cek kembali nanti atau submit eventmu sendiri!
-              </p>
-            </div>
+            <EmptyState
+              title="Belum Ada Event Mendatang"
+              message="Saat ini belum ada event yang dijadwalkan. Cek kembali nanti atau submit event Anda sendiri!"
+            >
+              <Button variant="accent" className="max-w-xs mx-auto">
+                <Link href="/submit-event">Submit Event</Link>
+              </Button>
+            </EmptyState>
           )}
         </section>
       </div>
