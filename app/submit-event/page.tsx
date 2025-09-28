@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, useEffect } from "react";
+import { toast } from "sonner";
 import { useFormStatus } from "react-dom";
 import Image from "next/image";
 import { Button } from "@/components/ui/Button";
@@ -48,6 +49,25 @@ export default function SubmitEventPage() {
     initialState
   );
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (state.message && state.type) {
+      if (state.type === "success") {
+        toast.success("Submit Event Berhasil", { description: state.message });
+      } else {
+        toast.error("Submit Event Gagal", { description: state.message });
+      }
+    }
+  }, [state]);
+
+  const getMinDateTime = () => {
+    const now = new Date();
+    // Sesuaikan dengan zona waktu lokal
+    const offset = now.getTimezoneOffset();
+    const localDate = new Date(now.getTime() - offset * 60 * 1000);
+    // Format ke YYYY-MM-DDTHH:MM
+    return localDate.toISOString().slice(0, 16);
+  };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

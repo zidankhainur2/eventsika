@@ -7,6 +7,7 @@ import Footer from "@/components/Footer";
 import Link from "next/link";
 import MobileMenu from "@/components/MobileMenu";
 import { createClient } from "@/utils/supabase/server";
+import { Toaster } from "sonner";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -36,6 +37,7 @@ export default async function RootLayout({
   return (
     <html lang="id" className="scroll-smooth">
       <body className={`${poppins.className} bg-neutral-light`}>
+        <Toaster position="top-center" richColors />
         <header className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white/80 backdrop-blur-sm">
           <nav className="max-w-6xl mx-auto flex justify-between items-center h-16 px-4">
             <Link href="/" className="text-xl font-bold text-primary">

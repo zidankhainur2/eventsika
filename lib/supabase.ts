@@ -72,13 +72,36 @@ export async function getMajorRelatedEvents(
 }
 
 export async function getAllUpcomingEvents(
-  supabase: ReturnType<typeof createClient>
+  supabase: ReturnType<typeof createClient>,
+  {
+    search,
+    category,
+  }: {
+    search?: string;
+    category?: string;
+  }
 ): Promise<Event[]> {
-  const { data, error } = await supabase
+  let query = supabase
     .from("events")
     .select("*")
     .gte("event_date", new Date().toISOString())
     .order("event_date", { ascending: true });
+
+  // Filter berdasarkan pencarian (search)
+  if (search) {
+    const searchTerm = `%${search}%`;
+    // Mencari di kolom title, organizer, atau description
+    query = query.or(
+      `title.ilike.${searchTerm},organizer.ilike.${searchTerm},description.ilike.${searchTerm}`
+    );
+  }
+
+  // Filter berdasarkan kategori (category)
+  if (category) {
+    query = query.eq("category", category);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     console.error("Error fetching all upcoming events:", error);

@@ -207,7 +207,8 @@ export async function approveOrganizerApplication(
   userId: string,
   prevState: FormState | null,
   formData: FormData
-): Promise<FormState | null> {
+): Promise<FormState> {
+  // Ubah return type agar tidak null
   const supabase = createClient();
   try {
     await verifySuperAdmin(supabase);
@@ -223,21 +224,27 @@ export async function approveOrganizerApplication(
       .update({ status: "approved" })
       .eq("id", applicationId);
     if (appError) throw appError;
+
+    revalidatePath("/admin");
+    revalidatePath("/profile");
+    // Kembalikan pesan sukses
+    return {
+      message: "Peran pengguna telah diubah menjadi organizer.",
+      type: "success",
+    };
   } catch (error: unknown) {
     const message =
       error instanceof Error ? error.message : "Terjadi kesalahan.";
     return { message, type: "error" };
   }
-  revalidatePath("/admin");
-  revalidatePath("/profile");
-  return null;
 }
 
 export async function rejectOrganizerApplication(
   applicationId: string,
   prevState: FormState | null,
   formData: FormData
-): Promise<FormState | null> {
+): Promise<FormState> {
+  // Ubah return type agar tidak null
   const supabase = createClient();
   try {
     await verifySuperAdmin(supabase);
@@ -246,13 +253,15 @@ export async function rejectOrganizerApplication(
       .update({ status: "rejected" })
       .eq("id", applicationId);
     if (error) throw error;
+
+    revalidatePath("/admin");
+    // Kembalikan pesan sukses
+    return { message: "Pengajuan telah ditolak.", type: "success" };
   } catch (error: unknown) {
     const message =
       error instanceof Error ? error.message : "Terjadi kesalahan.";
     return { message, type: "error" };
   }
-  revalidatePath("/admin");
-  return null;
 }
 
 export async function signUpWithRedirect(formData: FormData) {

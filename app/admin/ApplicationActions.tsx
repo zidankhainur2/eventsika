@@ -8,6 +8,7 @@ import {
 } from "@/app/action";
 import { Button } from "@/components/ui/Button";
 import { useActionState, useEffect } from "react";
+import { toast } from "sonner";
 
 function ActionButton({
   variant,
@@ -51,12 +52,25 @@ export function ApplicationActions({
 
   useEffect(() => {
     if (approveState?.type === "error") {
-      alert(`Error approving: ${approveState.message}`);
+      toast.error("Gagal Menyetujui", { description: approveState.message });
     }
+    // Tambahkan notifikasi sukses
+    if (approveState?.type === "success") {
+      toast.success("Pengajuan Disetujui", {
+        description: approveState.message,
+      });
+    }
+  }, [approveState]);
+
+  useEffect(() => {
     if (rejectState?.type === "error") {
-      alert(`Error rejecting: ${rejectState.message}`);
+      toast.error("Gagal Menolak", { description: rejectState.message });
     }
-  }, [approveState, rejectState]);
+    // Tambahkan notifikasi sukses
+    if (rejectState?.type === "success") {
+      toast.success("Pengajuan Ditolak", { description: rejectState.message });
+    }
+  }, [rejectState]);
 
   return (
     <div className="flex gap-2 w-full sm:w-auto">

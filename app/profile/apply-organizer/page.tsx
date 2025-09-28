@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/Label";
 import { submitOrganizerApplication } from "@/app/action";
 import Link from "next/link";
 import { FiArrowLeft } from "react-icons/fi";
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
+import { toast } from "sonner";
 
 type FormState = {
   message: string;
@@ -34,6 +35,16 @@ export default function ApplyOrganizerPage() {
     submitOrganizerApplication,
     initialState
   );
+
+  useEffect(() => {
+    if (state.message && state.type) {
+      if (state.type === "success") {
+        toast.success("Pengajuan Terkirim!", { description: state.message });
+      } else {
+        toast.error("Pengajuan Gagal", { description: state.message });
+      }
+    }
+  }, [state]);
 
   return (
     <main className="py-8 sm:py-12">

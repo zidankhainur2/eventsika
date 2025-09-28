@@ -10,18 +10,30 @@ import EventCarousel from "@/components/EventCarousel";
 import AnimatedEventGrid from "@/components/AnimatedEventGrid";
 import { createClient } from "@/utils/supabase/server";
 
-export default async function HomePage() {
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams?: {
+    search?: string;
+    category?: string;
+  };
+}) {
   const supabase = createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // Ekstrak nilai search dan category dari searchParams
+  const search = searchParams?.search || "";
+  const category = searchParams?.category || "";
+
   // Ambil data untuk semua section secara paralel
+  // Panggil getAllUpcomingEvents dengan parameter
   const [recommendedEvents, majorRelatedEvents, allUpcomingEvents] =
     await Promise.all([
       getRecommendedEvents(supabase, user),
       getMajorRelatedEvents(supabase, user),
-      getAllUpcomingEvents(supabase),
+      getAllUpcomingEvents(supabase, { search, category }), // Teruskan parameter di sini
     ]);
 
   return (

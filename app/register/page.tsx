@@ -1,4 +1,3 @@
-// app/register/page.tsx
 "use client";
 
 import { useState } from "react";
@@ -16,8 +15,18 @@ export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    // Validasi panjang password di sisi klien
+    if (password.length < 6) {
+      setPasswordError("Password harus memiliki minimal 6 karakter.");
+      return; // Hentikan pengiriman jika tidak valid
+    }
+    setPasswordError(null); // Hapus error jika sudah valid
+
     setIsLoading(true);
     setError(null);
 
