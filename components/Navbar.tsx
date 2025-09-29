@@ -18,7 +18,6 @@ export default async function Navbar() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white/80 backdrop-blur-sm">
       <nav className="max-w-6xl mx-auto flex justify-between items-center h-16 px-4">
-        
         {/* Tombol Menu Mobile: Muncul paling kiri di mobile */}
         <div className="md:hidden order-1">
           <MobileMenuContainer
@@ -56,12 +55,20 @@ export default async function Navbar() {
           )}
           {(profile?.role === "organizer" ||
             profile?.role === "super_admin") && (
-            <Link
-              href="/submit-event"
-              className="text-sm font-medium text-neutral-dark/80 hover:text-primary transition-colors"
-            >
-              Submit Event
-            </Link>
+            <>
+              <Link
+                href="/organizer/dashboard"
+                className="text-sm font-medium text-neutral-dark/80 hover:text-primary transition-colors"
+              >
+                Dasbor
+              </Link>
+              <Link
+                href="/submit-event"
+                className="text-sm font-medium text-neutral-dark/80 hover:text-primary transition-colors"
+              >
+                Submit Event
+              </Link>
+            </>
           )}
           <AuthButton user={user} />
         </div>

@@ -6,7 +6,6 @@ import { redirect } from "next/navigation";
 import { FormState } from "./(types)/FormState";
 import { headers } from "next/headers";
 
-// Helper untuk verifikasi Super Admin
 async function verifySuperAdmin(supabase: ReturnType<typeof createClient>) {
   const {
     data: { user },
@@ -103,6 +102,85 @@ export async function addEvent(
 
   revalidatePath("/");
   redirect("/");
+}
+
+export async function updateEvent(
+  prevState: FormState,
+  formData: FormData
+): Promise<FormState> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { message: "Anda harus login untuk mengubah event.", type: "error" };
+  }
+
+  const eventId = formData.get("id") as string;
+  const currentImageUrl = formData.get("current_image_url") as string;
+  const imageFile = formData.get("image_file") as File;
+  let imageUrl = currentImageUrl;
+
+  // Cek apakah ada file gambar baru yang diunggah
+  if (imageFile && imageFile.size > 0) {
+    if (imageFile.size > 2 * 1024 * 1024) {
+      // Batas 2MB
+      return {
+        message: "Ukuran gambar tidak boleh lebih dari 2MB.",
+        type: "error",
+      };
+    }
+
+    const fileExt = imageFile.name.split(".").pop();
+    const filePath = `${user.id}/${eventId}-${Date.now()}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("event-posters")
+      .upload(filePath, imageFile, { upsert: true }); // upsert: true untuk menimpa jika ada
+
+    if (uploadError) {
+      console.error("Upload error:", uploadError);
+      return { message: "Gagal mengunggah gambar baru.", type: "error" };
+    }
+
+    // Dapatkan URL gambar baru
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from("event-posters").getPublicUrl(filePath);
+    imageUrl = publicUrl;
+  }
+
+  const eventData = {
+    title: formData.get("title") as string,
+    organizer: formData.get("organizer") as string,
+    category: formData.get("category") as string,
+    location: formData.get("location") as string,
+    event_date: formData.get("event_date") as string,
+    description: formData.get("description") as string,
+    registration_link: formData.get("registration_link") as string,
+    image_url: imageUrl,
+  };
+
+  // Lakukan update ke database
+  const { error } = await supabase
+    .from("events")
+    .update(eventData)
+    .match({ id: eventId, organizer_id: user.id }); // PENTING: Cek keamanan ganda
+
+  if (error) {
+    console.error("Error updating data:", error);
+    return {
+      message: `Gagal memperbarui event: ${error.message}`,
+      type: "error",
+    };
+  }
+
+  // Revalidate path yang relevan & redirect
+  revalidatePath("/");
+  revalidatePath(`/event/${eventId}`);
+  revalidatePath("/organizer/dashboard");
+  redirect("/organizer/dashboard");
 }
 
 export async function updateUserPreferences(

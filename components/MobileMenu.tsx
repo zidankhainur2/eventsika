@@ -150,7 +150,7 @@ export default function MobileMenu({
                             }
                             alt="Avatar"
                             fill
-                            className="object-cover"
+                            className="object-cover rounded-full"
                           />
                         </div>
                       </div>
@@ -240,13 +240,21 @@ export default function MobileMenu({
                     <div className="space-y-3 mt-4">
                       {(profile?.role === "organizer" ||
                         profile?.role === "super_admin") && (
-                        <Link
-                          href="/submit-event"
-                          className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-accent text-on-accent font-bold hover:bg-yellow-500 shadow-md transition-colors"
-                        >
-                          <FiPlusSquare className="w-5 h-5" />
-                          <span>Submit Event</span>
-                        </Link>
+                        <>
+                          <Link
+                            href="/organizer/dashboard"
+                            className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-accent text-on-accent font-bold hover:bg-yellow-500 shadow-md transition-colors"
+                          >
+                            Dasbor
+                          </Link>
+                          <Link
+                            href="/submit-event"
+                            className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-accent text-on-accent font-bold hover:bg-yellow-500 shadow-md transition-colors"
+                          >
+                            <FiPlusSquare className="w-5 h-5" />
+                            <span>Submit Event</span>
+                          </Link>
+                        </>
                       )}
                       <form action={signOut} className="w-full">
                         <button

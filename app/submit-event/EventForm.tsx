@@ -1,0 +1,229 @@
+"use client";
+
+import { useActionState, useState, useEffect } from "react";
+import { toast } from "sonner";
+import { useFormStatus } from "react-dom";
+import Image from "next/image";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Label } from "@/components/ui/Label";
+import { Select } from "@/components/ui/Select";
+import { Textarea } from "@/components/ui/Textarea";
+import { CATEGORIES } from "@/lib/constants";
+import { type Event } from "@/lib/types";
+
+type FormState = {
+  message: string;
+  type: "success" | "error" | null;
+};
+
+const initialState: FormState = {
+  message: "",
+  type: null,
+};
+
+function SubmitButton({ text }: { text: string }) {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" disabled={pending}>
+      {pending ? "Memproses..." : text}
+    </Button>
+  );
+}
+
+interface EventFormProps {
+  // Action bisa untuk 'addEvent' atau 'updateEvent'
+  formAction: (prevState: FormState, formData: FormData) => Promise<FormState>;
+  event?: Event | null; // Data event untuk mode edit
+  buttonText: string;
+}
+
+export default function EventForm({
+  formAction,
+  event = null,
+  buttonText,
+}: EventFormProps) {
+  const [state, dispatch] = useActionState(formAction, initialState);
+  const [imagePreview, setImagePreview] = useState<string | null>(
+    event?.image_url || null
+  );
+
+  useEffect(() => {
+    if (state.message && state.type) {
+      if (state.type === "success") {
+        toast.success("Berhasil", { description: state.message });
+      } else {
+        toast.error("Gagal", { description: state.message });
+      }
+    }
+  }, [state]);
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setImagePreview(event?.image_url || null);
+    }
+  };
+
+  // Fungsi untuk memformat tanggal ke YYYY-MM-DDTHH:MM
+  const formatDateTimeLocal = (isoString: string) => {
+    const date = new Date(isoString);
+    const offset = date.getTimezoneOffset();
+    const localDate = new Date(date.getTime() - offset * 60 * 1000);
+    return localDate.toISOString().slice(0, 16);
+  };
+
+  return (
+    <form action={dispatch} className="space-y-8">
+      {/* Input tersembunyi untuk ID event saat mode edit */}
+      {event && <input type="hidden" name="id" value={event.id} />}
+      {event && (
+        <input
+          type="hidden"
+          name="current_image_url"
+          value={event.image_url || ""}
+        />
+      )}
+
+      <fieldset className="space-y-4">
+        <legend className="font-semibold text-lg text-primary mb-2">
+          Informasi Dasar
+        </legend>
+        <div>
+          <Label htmlFor="title">Nama Event</Label>
+          <Input
+            type="text"
+            name="title"
+            id="title"
+            required
+            defaultValue={event?.title}
+          />
+        </div>
+        <div>
+          <Label htmlFor="organizer">Penyelenggara</Label>
+          <Input
+            type="text"
+            name="organizer"
+            id="organizer"
+            required
+            defaultValue={event?.organizer}
+          />
+        </div>
+        <div>
+          <Label htmlFor="image_file">Gambar Poster</Label>
+          <Input
+            type="file"
+            name="image_file"
+            id="image_file"
+            accept="image/png, image/jpeg, image/webp"
+            onChange={handleImageChange}
+            className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+          />
+          {imagePreview && (
+            <div className="mt-4 relative w-full h-64 rounded-lg overflow-hidden border">
+              <Image
+                src={imagePreview}
+                alt="Pratinjau Poster"
+                fill
+                className="object-contain"
+              />
+            </div>
+          )}
+        </div>
+      </fieldset>
+
+      <fieldset className="space-y-4">
+        <legend className="font-semibold text-lg text-primary mb-2">
+          Detail Acara
+        </legend>
+        <div>
+          <Label htmlFor="category">Kategori</Label>
+          <Select
+            name="category"
+            id="category"
+            required
+            defaultValue={event?.category || ""}
+          >
+            <option value="" disabled>
+              Pilih kategori...
+            </option>
+            {CATEGORIES.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
+          </Select>
+        </div>
+        <div>
+          <Label htmlFor="location">Lokasi</Label>
+          <Input
+            type="text"
+            name="location"
+            id="location"
+            required
+            placeholder="Contoh: Gedung Fasilkom / Online"
+            defaultValue={event?.location}
+          />
+        </div>
+        <div>
+          <Label htmlFor="event_date">Tanggal & Waktu</Label>
+          <Input
+            type="datetime-local"
+            name="event_date"
+            id="event_date"
+            required
+            defaultValue={event ? formatDateTimeLocal(event.event_date) : ""}
+          />
+        </div>
+        <div>
+          <Label htmlFor="description">Deskripsi</Label>
+          <Textarea
+            name="description"
+            id="description"
+            required
+            defaultValue={event?.description}
+          />
+        </div>
+      </fieldset>
+
+      <fieldset className="space-y-4">
+        <legend className="font-semibold text-lg text-primary mb-2">
+          Pendaftaran
+        </legend>
+        <div>
+          <Label htmlFor="registration_link">Link Pendaftaran</Label>
+          <Input
+            type="url"
+            name="registration_link"
+            id="registration_link"
+            required
+            placeholder="https://"
+            defaultValue={event?.registration_link}
+          />
+        </div>
+      </fieldset>
+
+      {state?.message && (
+        <p
+          className={`text-sm p-3 rounded-md ${
+            state.type === "error"
+              ? "bg-red-100 text-red-700"
+              : "bg-green-100 text-green-700"
+          }`}
+        >
+          {state.message}
+        </p>
+      )}
+
+      <div className="pt-4">
+        <SubmitButton text={buttonText} />
+      </div>
+    </form>
+  );
+}

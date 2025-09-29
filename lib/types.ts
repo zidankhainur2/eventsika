@@ -11,6 +11,7 @@ export type Event = {
   category: string;
   registration_link: string;
   image_url: string | null;
+  organizer_id: string | null;
 };
 
 export type Profile = {

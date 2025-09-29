@@ -150,3 +150,21 @@ export async function getSavedEventIds(
   // Menggunakan Set untuk pengecekan yang lebih cepat (O(1))
   return new Set(data.map((item) => item.event_id));
 }
+
+export async function getEventsByOrganizer(
+  supabase: ReturnType<typeof createClient>,
+  organizerId: string
+): Promise<Event[]> {
+  const { data, error } = await supabase
+    .from("events")
+    .select("*")
+    .eq("organizer_id", organizerId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Error fetching organizer events:", error);
+    return [];
+  }
+
+  return data ?? [];
+}
