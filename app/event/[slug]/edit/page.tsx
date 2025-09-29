@@ -1,6 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
-import { getEventById } from "@/lib/supabase";
+import { getEventBySlug } from "@/lib/supabase";
 import { Card } from "@/components/ui/Card";
 import EventForm from "@/app/submit-event/EventForm";
 import { updateEvent } from "@/app/action";
@@ -8,7 +8,7 @@ import Link from "next/link";
 import { FiArrowLeft } from "react-icons/fi";
 
 type EditEventPageProps = {
-  params: { id: string };
+  params: { slug: string };
 };
 
 export default async function EditEventPage({ params }: EditEventPageProps) {
@@ -21,7 +21,7 @@ export default async function EditEventPage({ params }: EditEventPageProps) {
     redirect("/login");
   }
 
-  const event = await getEventById(params.id);
+  const event = await getEventBySlug(params.slug);
 
   if (event.organizer_id !== user.id) {
     redirect("/");
