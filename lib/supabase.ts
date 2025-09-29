@@ -103,3 +103,50 @@ export async function getEventById(id: string): Promise<Event> {
   }
   return data;
 }
+
+type SavedEventRow = {
+  events: Event | null;
+};
+
+export async function getSavedEvents(
+  supabase: ReturnType<typeof createClient>,
+  user: User | null
+): Promise<Event[]> {
+  if (!user) return [];
+
+  const { data, error } = await supabase
+    .from("saved_events")
+    .select("events(*)")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+    .returns<SavedEventRow[]>();
+
+  if (error) {
+    console.error("Error fetching saved events:", error);
+    return [];
+  }
+
+  return (data ?? [])
+    .map((item) => item.events)
+    .filter((e): e is Event => Boolean(e));
+}
+
+export async function getSavedEventIds(
+  supabase: ReturnType<typeof createClient>,
+  user: User | null
+): Promise<Set<string>> {
+  if (!user) return new Set();
+
+  const { data, error } = await supabase
+    .from("saved_events")
+    .select("event_id")
+    .eq("user_id", user.id);
+
+  if (error) {
+    console.error("Error fetching saved event IDs:", error);
+    return new Set();
+  }
+
+  // Menggunakan Set untuk pengecekan yang lebih cepat (O(1))
+  return new Set(data.map((item) => item.event_id));
+}

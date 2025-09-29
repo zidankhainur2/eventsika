@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/Card";
 import Link from "next/link";
 import { type Profile } from "@/lib/types";
 import ProfileForm from "./ProfileForm"; // Impor komponen form baru
+import { FiHeart } from "react-icons/fi";
 
 async function getProfile(
   supabase: ReturnType<typeof createClient>
@@ -115,6 +116,22 @@ export default async function ProfilePage() {
             </p>
           </div>
         )}
+
+        <div className="mt-8">
+          <Link href="/profile/saved-events">
+            <div className="group flex items-center justify-between rounded-lg border p-4 transition-colors hover:bg-gray-50">
+              <div>
+                <h3 className="font-semibold text-neutral-dark group-hover:text-primary">
+                  Event Tersimpan
+                </h3>
+                <p className="text-sm text-gray-500">
+                  Lihat semua event yang telah Anda tandai
+                </p>
+              </div>
+              <FiHeart className="h-5 w-5 text-gray-400 transition-colors group-hover:text-primary" />
+            </div>
+          </Link>
+        </div>
 
         {/* Panggil komponen form di sini */}
         <ProfileForm profile={profile} />

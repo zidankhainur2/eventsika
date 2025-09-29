@@ -401,6 +401,45 @@ export async function updateProfile(
   return { message: "Profil berhasil diperbarui!", type: "success" };
 }
 
+export async function toggleSaveEvent(eventId: string, isSaved: boolean) {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Anda harus login untuk menyimpan event." };
+  }
+
+  if (isSaved) {
+    // Jika sudah disimpan, hapus dari saved_events
+    const { error } = await supabase
+      .from("saved_events")
+      .delete()
+      .match({ user_id: user.id, event_id: eventId });
+
+    if (error) {
+      return { error: "Gagal membatalkan penyimpanan event." };
+    }
+  } else {
+    // Jika belum disimpan, tambahkan ke saved_events
+    const { error } = await supabase
+      .from("saved_events")
+      .insert({ user_id: user.id, event_id: eventId });
+
+    if (error) {
+      return { error: "Gagal menyimpan event." };
+    }
+  }
+
+  // Revalidate path agar UI diperbarui di halaman utama dan halaman detail
+  revalidatePath("/");
+  revalidatePath(`/event/${eventId}`);
+  revalidatePath("/profile/saved-events"); // Nanti kita buat halaman ini
+
+  return { success: true };
+}
+
 export async function signOut() {
   const supabase = createClient();
   await supabase.auth.signOut();

@@ -3,6 +3,8 @@ import { getEventById } from "@/lib/supabase";
 import Image from "next/image";
 import { FaCalendarAlt, FaMapMarkerAlt, FaUserFriends } from "react-icons/fa";
 import StickyRegisterButton from "@/components/StickyRegisterButton";
+import { createClient } from "@/utils/supabase/server";
+import SaveEventButton from "@/components/SaveEventButton";
 
 type EventDetailPageProps = {
   params: { id: string };
@@ -33,6 +35,23 @@ export default async function EventDetailPage({
 }: EventDetailPageProps) {
   const event = await getEventById(params.id);
 
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  let isSaved = false;
+  if (user) {
+    // Cek apakah event ini ada di tabel saved_events untuk user ini
+    const { data: savedEventData } = await supabase
+      .from("saved_events")
+      .select("id")
+      .match({ user_id: user.id, event_id: params.id })
+      .single(); // .single() untuk ambil satu baris saja
+
+    isSaved = !!savedEventData; // Jika ada data, isSaved menjadi true
+  }
+
   return (
     <>
       <main className="py-8 sm:py-12">
@@ -45,6 +64,13 @@ export default async function EventDetailPage({
               className="object-cover"
               priority
             />
+            <div className="absolute top-4 right-4 z-10">
+              <SaveEventButton
+                eventId={event.id}
+                isSavedInitial={isSaved}
+                user={user}
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

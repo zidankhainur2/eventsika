@@ -3,6 +3,7 @@ import {
   getRecommendedEvents,
   getMajorRelatedEvents,
   getAllUpcomingEvents,
+  getSavedEventIds,
 } from "@/lib/supabase";
 import EventCarousel from "@/components/EventCarousel";
 import { createClient } from "@/utils/supabase/server";
@@ -26,12 +27,17 @@ export default async function HomePage({
   const search = searchParams?.search || "";
   const category = searchParams?.category || "";
 
-  const [recommendedEvents, majorRelatedEvents, allUpcomingEvents] =
-    await Promise.all([
-      getRecommendedEvents(supabase, user),
-      getMajorRelatedEvents(supabase, user),
-      getAllUpcomingEvents(supabase, { search, category }),
-    ]);
+  const [
+    recommendedEvents,
+    majorRelatedEvents,
+    allUpcomingEvents,
+    savedEventIds, // <-- Error #1 teratasi di sini
+  ] = await Promise.all([
+    getRecommendedEvents(supabase, user),
+    getMajorRelatedEvents(supabase, user),
+    getAllUpcomingEvents(supabase, { search, category }),
+    getSavedEventIds(supabase, user), // <-- FIX: Tambahkan pemanggilan fungsi ini
+  ]);
 
   const isSearching = search || category;
 
@@ -39,16 +45,22 @@ export default async function HomePage({
     <main className="min-h-screen py-8 sm:py-12">
       <Hero />
       <div id="events" className="mt-12 space-y-8">
+        {/* FIX: Tambahkan props 'savedEventIds' dan 'user' */}
         <EventCarousel
           title="Rekomendasi Untukmu"
           events={recommendedEvents}
           viewAllLink="/events/recommended"
+          savedEventIds={savedEventIds}
+          user={user}
         />
 
+        {/* FIX: Tambahkan props 'savedEventIds' dan 'user' */}
         <EventCarousel
           title="Terkait Jurusanmu"
           events={majorRelatedEvents}
           viewAllLink="/events/major"
+          savedEventIds={savedEventIds}
+          user={user}
         />
 
         <section>
@@ -57,6 +69,8 @@ export default async function HomePage({
               title="Semua Event Mendatang"
               events={allUpcomingEvents}
               viewAllLink="/events/upcoming"
+              savedEventIds={savedEventIds}
+              user={user}
             />
           ) : isSearching ? (
             <EmptyState
