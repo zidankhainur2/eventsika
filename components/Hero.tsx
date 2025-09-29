@@ -56,7 +56,7 @@ export default function Hero() {
     <section className="relative text-center py-20 sm:py-28 bg-cover bg-center rounded-xl shadow-md overflow-hidden">
       <div
         className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: "url('/hero-bg.jpg')" }}
+        style={{ backgroundImage: "url('/hero-bg.webp')" }}
       />
       <div className="absolute inset-0 bg-primary/70" />
 

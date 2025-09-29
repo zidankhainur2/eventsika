@@ -51,7 +51,7 @@ export const metadata: Metadata = {
     siteName: "EventSika",
     images: [
       {
-        url: "/hero-bg.jpg", // Ganti dengan URL gambar OG Anda
+        url: "/hero-bg.webp", // Ganti dengan URL gambar OG Anda
         width: 1200,
         height: 630,
         alt: "EventSika Hero Image",
@@ -64,7 +64,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "EventSika - Info Event Kampus",
     description: "Semua info event kampus UNSIKA dalam satu platform.",
-    images: ["/hero-bg.jpg"], // Ganti dengan URL gambar Twitter Anda
+    images: ["/hero-bg.webp"], // Ganti dengan URL gambar Twitter Anda
   },
 };
 
