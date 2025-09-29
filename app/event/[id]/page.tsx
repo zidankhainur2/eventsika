@@ -1,10 +1,10 @@
-// src/app/event/[id]/page.tsx
 import { getEventById } from "@/lib/supabase";
 import Image from "next/image";
 import { FaCalendarAlt, FaMapMarkerAlt, FaUserFriends } from "react-icons/fa";
 import StickyRegisterButton from "@/components/StickyRegisterButton";
 import { createClient } from "@/utils/supabase/server";
 import SaveEventButton from "@/components/SaveEventButton";
+import RegisterButton from "@/components/RegisterButton";
 
 type EventDetailPageProps = {
   params: { id: string };
@@ -34,7 +34,6 @@ export default async function EventDetailPage({
   params,
 }: EventDetailPageProps) {
   const event = await getEventById(params.id);
-
   const supabase = createClient();
   const {
     data: { user },
@@ -42,14 +41,12 @@ export default async function EventDetailPage({
 
   let isSaved = false;
   if (user) {
-    // Cek apakah event ini ada di tabel saved_events untuk user ini
     const { data: savedEventData } = await supabase
       .from("saved_events")
       .select("id")
       .match({ user_id: user.id, event_id: params.id })
-      .single(); // .single() untuk ambil satu baris saja
-
-    isSaved = !!savedEventData; // Jika ada data, isSaved menjadi true
+      .single();
+    isSaved = !!savedEventData;
   }
 
   return (
@@ -114,21 +111,14 @@ export default async function EventDetailPage({
                   </InfoItem>
                 </div>
                 <div className="mt-8 hidden lg:block">
-                  <a
-                    href={event.registration_link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full text-center block bg-accent text-on-accent font-bold py-3 px-10 rounded-lg text-lg hover:bg-yellow-500 transition-colors"
-                  >
-                    Daftar Sekarang
-                  </a>
+                  <RegisterButton link={event.registration_link} user={user} />
                 </div>
               </div>
             </aside>
           </div>
         </div>
       </main>
-      <StickyRegisterButton link={event.registration_link} />
+      <StickyRegisterButton link={event.registration_link} user={user} />
     </>
   );
 }
