@@ -228,8 +228,16 @@ export default function MobileMenu({
                   variants={itemVariants}
                   className="p-6 border-t border-gray-100 bg-gray-50/50"
                 >
+                  {profile?.role === "super_admin" && (
+                    <Link
+                      href="/admin"
+                      className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-red-800 text-white font-bold hover:bg-primary shadow-md transition-colors"
+                    >
+                      Admin
+                    </Link>
+                  )}
                   {user ? (
-                    <div className="space-y-3">
+                    <div className="space-y-3 mt-4">
                       {(profile?.role === "organizer" ||
                         profile?.role === "super_admin") && (
                         <Link

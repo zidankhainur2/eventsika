@@ -6,6 +6,7 @@ import { Toaster } from "sonner";
 import { ProgressBar } from "@/components/ProgressBar";
 import Navbar from "@/components/Navbar";
 import { Suspense } from "react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -96,6 +97,7 @@ export default function RootLayout({
           className="w-full max-w-6xl mx-auto px-4 flex-grow"
         >
           {children}
+          <SpeedInsights />
         </main>
 
         <Footer />

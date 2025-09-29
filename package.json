@@ -13,6 +13,7 @@
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.56.1",
     "@types/nprogress": "^0.2.3",
+    "@vercel/speed-insights": "^1.2.0",
     "framer-motion": "^12.23.12",
     "next": "15.5.2",
     "nprogress": "^0.2.0",
