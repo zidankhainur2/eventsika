@@ -28,7 +28,7 @@ export default function AnimatedEventGrid({ events }: AnimatedEventGridProps) {
       animate="visible"
     >
       {events.map((event) => (
-        <EventCard key={event.id} event={event} />
+        <EventCard key={event.id} event={event} isSaved={false} user={null} />
       ))}
     </motion.div>
   );
