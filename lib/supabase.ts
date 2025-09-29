@@ -90,12 +90,12 @@ export async function getAllUpcomingEvents(
   return data ?? [];
 }
 
-export async function getEventById(id: string): Promise<Event> {
+export async function getEventBySlug(slug: string): Promise<Event> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from("events")
     .select("*")
-    .eq("id", id)
+    .eq("slug", slug) // <-- Ubah dari 'id' menjadi 'slug'
     .single();
 
   if (error || !data) {

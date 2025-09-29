@@ -52,7 +52,7 @@ export default function EventCard({ event, isSaved, user }: EventCardProps) {
     >
       {/* FIX: Pindahkan SaveEventButton ke dalam div relative */}
       <div className="relative">
-        <Link href={`/event/${event.id}`} className="block">
+        <Link href={`/event/${event.slug}`} className="block">
           <div className="relative h-44 w-full">
             <Image
               src={event.image_url || "/hero-bg.jpg"}
@@ -74,7 +74,7 @@ export default function EventCard({ event, isSaved, user }: EventCardProps) {
           {event.category}
         </span>
         <h2 className="text-lg font-bold text-neutral-dark mb-3 line-clamp-2 flex-grow">
-          <Link href={`/event/${event.id}`}>{event.title}</Link>
+          <Link href={`/event/${event.slug}`}>{event.title}</Link>
         </h2>
         <div className="flex flex-col gap-2 mt-auto">
           <InfoPill

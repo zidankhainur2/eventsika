@@ -21,6 +21,16 @@ async function verifySuperAdmin(supabase: ReturnType<typeof createClient>) {
   if (profile?.role !== "super_admin") throw new Error("Not authorized");
 }
 
+function slugify(text: string): string {
+  return text
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, "-") // Ganti spasi dengan -
+    .replace(/[^\w\-]+/g, "") // Hapus karakter non-alfanumerik
+    .replace(/\-\-+/g, "-"); // Ganti -- ganda dengan satu -
+}
+
 export async function addEvent(
   prevState: FormState,
   formData: FormData
@@ -32,6 +42,14 @@ export async function addEvent(
 
   if (!user) {
     return { message: "Anda harus login untuk membuat event.", type: "error" };
+  }
+
+  const targetMajors = formData.getAll("target_majors") as string[];
+  if (targetMajors.length === 0) {
+    return {
+      message: "Anda harus memilih setidaknya satu target audiens.",
+      type: "error",
+    };
   }
 
   const imageFile = formData.get("image_file") as File;
@@ -66,16 +84,20 @@ export async function addEvent(
     data: { publicUrl },
   } = supabase.storage.from("event-posters").getPublicUrl(filePath);
 
+  const title = formData.get("title") as string;
+
   const eventData = {
-    title: formData.get("title") as string,
+    title: title,
+    slug: slugify(title),
     organizer: formData.get("organizer") as string,
     category: formData.get("category") as string,
     location: formData.get("location") as string,
     event_date: formData.get("event_date") as string,
     description: formData.get("description") as string,
     registration_link: formData.get("registration_link") as string,
-    image_url: publicUrl, // Gunakan URL dari Supabase Storage
+    image_url: publicUrl,
     organizer_id: user.id,
+    target_majors: targetMajors,
   };
 
   if (!eventData.title || !eventData.organizer || !eventData.event_date) {
@@ -117,6 +139,14 @@ export async function updateEvent(
     return { message: "Anda harus login untuk mengubah event.", type: "error" };
   }
 
+  const targetMajors = formData.getAll("target_majors") as string[];
+  if (targetMajors.length === 0) {
+    return {
+      message: "Anda harus memilih setidaknya satu target audiens.",
+      type: "error",
+    };
+  }
+
   const eventId = formData.get("id") as string;
   const currentImageUrl = formData.get("current_image_url") as string;
   const imageFile = formData.get("image_file") as File;
@@ -151,8 +181,11 @@ export async function updateEvent(
     imageUrl = publicUrl;
   }
 
+  const title = formData.get("title") as string;
+
   const eventData = {
-    title: formData.get("title") as string,
+    title: title,
+    slug: slugify(title),
     organizer: formData.get("organizer") as string,
     category: formData.get("category") as string,
     location: formData.get("location") as string,
@@ -160,6 +193,7 @@ export async function updateEvent(
     description: formData.get("description") as string,
     registration_link: formData.get("registration_link") as string,
     image_url: imageUrl,
+    target_majors: targetMajors,
   };
 
   // Lakukan update ke database

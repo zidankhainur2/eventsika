@@ -7,6 +7,7 @@ import { Input } from "./ui/Input";
 import { CATEGORIES } from "@/lib/constants";
 import { FiSearch } from "react-icons/fi";
 import { motion } from "framer-motion";
+import Image from "next/image";
 
 export default function Hero() {
   const searchParams = useSearchParams();
@@ -54,9 +55,12 @@ export default function Hero() {
 
   return (
     <section className="relative text-center py-20 sm:py-28 bg-cover bg-center rounded-xl shadow-md overflow-hidden">
-      <div
-        className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: "url('/hero-bg.webp')" }}
+      <Image
+        src="/hero-bg.webp"
+        alt="Audience at an event"
+        fill
+        className="object-cover"
+        priority
       />
       <div className="absolute inset-0 bg-primary/70" />
 

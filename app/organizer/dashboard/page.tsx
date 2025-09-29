@@ -58,13 +58,13 @@ export default async function OrganizerDashboard() {
                 </div>
                 <div className="flex items-center gap-3">
                   <Link
-                    href={`/event/${event.id}`}
+                    href={`/event/${event.slug}`}
                     className="text-sm font-medium text-gray-600 hover:text-primary"
                   >
                     Lihat
                   </Link>
                   <Link
-                    href={`/event/${event.id}/edit`}
+                    href={`/event/${event.slug}/edit`}
                     className="text-sm font-medium text-blue-600 hover:text-blue-800"
                   >
                     Edit

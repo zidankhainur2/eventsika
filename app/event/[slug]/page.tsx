@@ -1,4 +1,4 @@
-import { getEventById } from "@/lib/supabase";
+import { getEventBySlug } from "@/lib/supabase";
 import Image from "next/image";
 import { FaCalendarAlt, FaMapMarkerAlt, FaUserFriends } from "react-icons/fa";
 import StickyRegisterButton from "@/components/StickyRegisterButton";
@@ -7,7 +7,7 @@ import SaveEventButton from "@/components/SaveEventButton";
 import RegisterButton from "@/components/RegisterButton";
 
 type EventDetailPageProps = {
-  params: { id: string };
+  params: { slug: string };
 };
 
 function InfoItem({
@@ -33,7 +33,7 @@ function InfoItem({
 export default async function EventDetailPage({
   params,
 }: EventDetailPageProps) {
-  const event = await getEventById(params.id);
+  const event = await getEventBySlug(params.slug);
   const supabase = createClient();
   const {
     data: { user },
@@ -44,7 +44,7 @@ export default async function EventDetailPage({
     const { data: savedEventData } = await supabase
       .from("saved_events")
       .select("id")
-      .match({ user_id: user.id, event_id: params.id })
+      .match({ user_id: user.id, event_id: event.id })
       .single();
     isSaved = !!savedEventData;
   }

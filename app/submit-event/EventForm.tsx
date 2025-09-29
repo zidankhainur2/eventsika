@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
-import { CATEGORIES } from "@/lib/constants";
+import { CATEGORIES, MAJORS } from "@/lib/constants";
 import { type Event } from "@/lib/types";
 
 type FormState = {
@@ -189,6 +189,57 @@ export default function EventForm({
             required
             defaultValue={event?.description}
           />
+        </div>
+      </fieldset>
+
+      <fieldset className="space-y-4">
+        <legend className="font-semibold text-lg text-primary mb-2">
+          Target Audiens
+        </legend>
+        <p className="text-sm text-gray-600 -mt-2">
+          Pilih {"Umum"} atau tentukan jurusan spesifik.
+        </p>
+        <div className="space-y-2">
+          {/* Checkbox untuk Umum */}
+          <div className="flex items-center">
+            <input
+              id="umum"
+              name="target_majors"
+              type="checkbox"
+              value="Umum"
+              defaultChecked={!event || event.target_majors?.includes("Umum")}
+              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+            />
+            <Label htmlFor="umum" className="ml-3">
+              Umum (Semua Jurusan)
+            </Label>
+          </div>
+        </div>
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-300" />
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="bg-white px-2 text-gray-500">atau</span>
+          </div>
+        </div>
+        {/* Daftar Checkbox untuk Jurusan Spesifik */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-60 overflow-y-auto rounded-lg border p-4">
+          {MAJORS.map((major) => (
+            <div key={major} className="flex items-center">
+              <input
+                id={major}
+                name="target_majors"
+                type="checkbox"
+                value={major}
+                defaultChecked={event?.target_majors?.includes(major)}
+                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+              />
+              <Label htmlFor={major} className="ml-3">
+                {major}
+              </Label>
+            </div>
+          ))}
         </div>
       </fieldset>
 
