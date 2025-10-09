@@ -2,36 +2,50 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Card } from "@/components/ui/Card";
-import { Input } from "@/components/ui/Input";
-import { Label } from "@/components/ui/Label";
 import { Button } from "@/components/ui/Button";
-import { MdEmail, MdLock, MdPerson, MdSchool } from "react-icons/md";
+import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
 import { signUpWithRedirect } from "@/app/action";
 import Image from "next/image";
-import { Select } from "@/components/ui/Select";
 import { MAJORS } from "@/lib/constants";
+import { toast } from "sonner";
 
 export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [major, setMajor] = useState("");
-  const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [passwordError, setPasswordError] = useState<string | null>(null);
+
+  const validateForm = () => {
+    if (!fullName.trim()) {
+      toast.error("Nama Lengkap Wajib Diisi");
+      return false;
+    }
+    if (!major) {
+      toast.error("Jurusan Wajib Dipilih");
+      return false;
+    }
+    if (!email.includes("@") || !email.includes(".")) {
+      toast.error("Format Email Tidak Valid", {
+        description: "Pastikan email Anda mengandung '@' dan '.'",
+      });
+      return false;
+    }
+    if (password.length < 6) {
+      toast.error("Password Terlalu Pendek", {
+        description: "Password harus memiliki minimal 6 karakter.",
+      });
+      return false;
+    }
+    return true;
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
-    if (password.length < 6) {
-      setPasswordError("Password harus memiliki minimal 6 karakter.");
-      return;
-    }
-    setPasswordError(null);
+    if (!validateForm()) return;
 
     setIsLoading(true);
-    setError(null);
 
     const formData = new FormData();
     formData.append("email", email);
@@ -42,112 +56,132 @@ export default function RegisterPage() {
     const result = await signUpWithRedirect(formData);
 
     if (result?.error) {
-      setError(result.error);
+      toast.error("Pendaftaran Gagal", {
+        description: result.error,
+      });
     }
     setIsLoading(false);
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary/10 to-neutral-light">
-      <Card className="max-w-md w-full">
-        <div className="text-center mb-8">
-          <Image
-            src="/eventsika-logo.png"
-            alt="EventSika Logo"
-            width={80}
-            height={80}
-            className="mx-auto"
-          />
-          <h1 className="text-4xl font-bold text-primary mt-4">EventSika</h1>
-          <p className="text-neutral-dark/70 mt-2">Buat Akun untuk Memulai</p>
-        </div>
+    <main className="flex items-center justify-center min-h-screen bg-neutral-light">
+      <div className="relative flex flex-col m-6 space-y-8 bg-white shadow-2xl rounded-2xl md:flex-row md:space-y-0">
+        {/* Left-side form */}
+        <div className="flex flex-col justify-center p-8 md:p-14">
+          <span className="mb-3 text-4xl font-bold">Buat Akun Baru</span>
+          <span className="font-light text-gray-500 mb-8">
+            Satu langkah lagi menuju dunia event kampus!
+          </span>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="relative">
-            <Label htmlFor="full_name">Nama Lengkap</Label>
-            <MdPerson className="absolute top-10 left-3 text-gray-400" />
-            <Input
-              type="text"
-              name="full_name"
-              id="full_name"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              className="pl-10"
-              placeholder="Nama Lengkap Anda"
-              required
-            />
-          </div>
-          <div className="relative">
-            <Label htmlFor="major">Jurusan</Label>
-            <MdSchool className="absolute top-10 left-3 text-gray-400" />
-            <Select
-              name="major"
-              id="major"
-              value={major}
-              onChange={(e) => setMajor(e.target.value)}
-              required
-              className="pl-10"
-            >
-              <option value="" disabled>
-                Pilih jurusan...
-              </option>
-              {MAJORS.map((majorOption) => (
-                <option key={majorOption} value={majorOption}>
-                  {majorOption}
+          <form onSubmit={handleSubmit} className="flex flex-col space-y-4">
+            <div>
+              <label htmlFor="full_name" className="mb-2 text-md font-medium">
+                Nama Lengkap
+              </label>
+              <Input
+                type="text"
+                name="full_name"
+                id="full_name"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                className="w-full p-2 mt-1"
+                placeholder="Nama Lengkap Anda"
+                required
+              />
+            </div>
+            <div>
+              <label htmlFor="major" className="mb-2 text-md font-medium">
+                Jurusan
+              </label>
+              <Select
+                name="major"
+                id="major"
+                value={major}
+                onChange={(e) => setMajor(e.target.value)}
+                required
+                className="w-full p-2 mt-1"
+              >
+                <option value="" disabled>
+                  Pilih jurusan...
                 </option>
-              ))}
-            </Select>
-          </div>
-          <div className="relative">
-            <Label htmlFor="email">Email</Label>
-            <MdEmail className="absolute top-10 left-3 text-gray-400" />
-            <Input
-              type="email"
-              name="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="pl-10"
-              placeholder="email@address.com"
-              required
-            />
-          </div>
-          <div className="relative">
-            <Label htmlFor="password">Password (minimal 6 karakter)</Label>
-            <MdLock className="absolute top-10 left-3 text-gray-400" />
-            <Input
-              type="password"
-              name="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="pl-10"
-              placeholder="••••••••"
-              required
-            />
-            {passwordError && (
-              <p className="text-red-500 text-xs mt-1">{passwordError}</p>
-            )}
-          </div>
+                {MAJORS.map((majorOption) => (
+                  <option key={majorOption} value={majorOption}>
+                    {majorOption}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <div>
+              <label htmlFor="email" className="mb-2 text-md font-medium">
+                Email
+              </label>
+              <Input
+                type="email"
+                name="email"
+                id="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full p-2 mt-1"
+                placeholder="email@student.unsika.ac.id"
+                required
+              />
+            </div>
+            <div>
+              <label htmlFor="password" className="mb-2 text-md font-medium">
+                Password
+              </label>
+              <Input
+                type="password"
+                name="password"
+                id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full p-2 mt-1"
+                placeholder="Minimal 6 karakter"
+                required
+              />
+            </div>
 
-          {error && <p className="text-red-500 text-sm text-center">{error}</p>}
-
-          <div className="pt-4">
-            <Button type="submit" disabled={isLoading} variant="accent">
-              {isLoading ? "Mendaftar..." : "Daftar"}
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="w-full mt-6"
+              variant="accent"
+            >
+              {isLoading ? "Memproses..." : "Daftar Akun"}
             </Button>
-          </div>
-          <p className="text-center text-sm text-gray-600">
+          </form>
+
+          <div className="text-center text-gray-500 mt-8">
             Sudah punya akun?{" "}
             <Link
               href="/login"
-              className="font-semibold text-primary hover:underline"
+              className="font-bold text-primary hover:underline"
             >
-              Masuk
+              Masuk di sini
             </Link>
-          </p>
-        </form>
-      </Card>
+          </div>
+        </div>
+
+        {/* Right-side image */}
+        <div className="relative">
+          <Image
+            src="/hero-bg-login.png"
+            alt="Event background"
+            width={400}
+            height={600}
+            className="w-[400px] h-full hidden rounded-r-2xl md:block object-cover"
+            priority
+          />
+          <div className="absolute hidden bottom-10 right-6 p-6 bg-white bg-opacity-30 backdrop-blur-sm rounded drop-shadow-lg md:block">
+            <span className="text-white text-xl">
+              Satu platform, <br />
+              semua informasi <br />
+              event UNSIKA.
+            </span>
+          </div>
+        </div>
+      </div>
     </main>
   );
 }

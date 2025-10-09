@@ -1,20 +1,17 @@
-// app/login/page.tsx
 "use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
-import { Card } from "@/components/ui/Card";
-import { Input } from "@/components/ui/Input";
-import { Label } from "@/components/ui/Label";
-import { Button } from "@/components/ui/Button";
-import { MdEmail, MdLock } from "react-icons/md";
+import { toast } from "sonner";
+import Image from "next/image"; 
+import { Button } from "@/components/ui/Button"; 
+import { Input } from "@/components/ui/Input"; 
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const supabase = createClient();
@@ -22,77 +19,114 @@ export default function LoginPage() {
   const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
-    setError(null);
 
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
+
     if (error) {
-      setError(error.message);
+      toast.error("Login Gagal", {
+        description: "Email atau password salah. Silakan periksa kembali.",
+      });
     } else {
+      toast.success("Login Berhasil!", {
+        description: "Anda akan diarahkan ke halaman utama.",
+      });
       router.push("/");
-      router.refresh(); // Arahkan ke homepage setelah login
+      router.refresh();
     }
     setIsLoading(false);
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary/10 to-neutral-light">
-      <Card className="max-w-md w-full">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-primary">EventSika</h1>
-          <p className="text-neutral-dark/70 mt-2">Masuk untuk Melanjutkan</p>
-        </div>
+    <main className="flex items-center justify-center min-h-screen bg-neutral-light">
+      <div className="relative flex flex-col m-6 space-y-8 bg-white shadow-2xl rounded-2xl md:flex-row md:space-y-0">
+        {/* Left-side form */}
+        <div className="flex flex-col justify-center p-8 md:p-14">
+          <span className="mb-3 text-4xl font-bold">Selamat Datang!</span>
+          <span className="font-light text-gray-500 mb-8">
+            Silakan masukkan detail akun Anda
+          </span>
 
-        <form onSubmit={handleSignIn} className="space-y-6">
-          <div className="relative">
-            <Label htmlFor="email">Email</Label>
-            <MdEmail className="absolute top-10 left-3 text-gray-400" />
-            <Input
-              type="email"
-              name="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="pl-10"
-              placeholder="email@address.com"
-              required
-            />
-          </div>
-          <div className="relative">
-            <Label htmlFor="password">Password</Label>
-            <MdLock className="absolute top-10 left-3 text-gray-400" />
-            <Input
-              type="password"
-              name="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="pl-10"
-              placeholder="••••••••"
-              required
-            />
-          </div>
+          <form onSubmit={handleSignIn} className="flex flex-col space-y-4">
+            <div>
+              <label htmlFor="email" className="mb-2 text-md font-medium">
+                Email
+              </label>
+              <Input
+                type="email"
+                name="email"
+                id="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full p-2 mt-1"
+                placeholder="npm@student.unsika.ac.id"
+                required
+              />
+            </div>
+            <div>
+              <label htmlFor="password" className="mb-2 text-md font-medium">
+                Password
+              </label>
+              <Input
+                type="password"
+                name="password"
+                id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full p-2 mt-1"
+                placeholder="••••••••"
+                required
+              />
+            </div>
 
-          {error && <p className="text-red-500 text-sm text-center">{error}</p>}
-
-          <div className="pt-4">
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? "Loading..." : "Login"}
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="w-full mt-6"
+              variant="primary"
+            >
+              {isLoading ? "Memproses..." : "Login"}
             </Button>
-          </div>
-          <p className="text-center text-sm text-gray-600">
+          </form>
+
+          <div className="text-center text-gray-500 mt-8">
             Belum punya akun?{" "}
             <Link
               href="/register"
-              className="font-semibold text-primary hover:underline"
+              className="font-bold text-primary hover:underline"
             >
-              Daftar di sini
+              Daftar gratis
             </Link>
-          </p>
-        </form>
-      </Card>
+          </div>
+          <div className="text-center mt-4">
+            <Link href="/" className="text-sm text-gray-500 hover:underline">
+              Kembali ke Beranda
+            </Link>
+          </div>
+        </div>
+
+        {/* Right-side image */}
+        <div className="relative">
+          <Image
+            src="/hero-bg-login.png"
+            alt="Event background"
+            width={400}
+            height={600}
+            className="w-[400px] h-full hidden rounded-r-2xl md:block object-cover"
+            priority
+          />
+          {/* Overlay text */}
+          <div className="absolute hidden bottom-10 right-6 p-6 bg-white bg-opacity-30 backdrop-blur-sm rounded drop-shadow-lg md:block">
+            <span className="text-white text-xl">
+              Temukan dan <br />
+              bagikan event <br />
+              kampus terbaik!
+            </span>
+          </div>
+        </div>
+      </div>
     </main>
   );
 }

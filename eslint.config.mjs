@@ -18,6 +18,8 @@ const eslintConfig = [
       "out/**",
       "build/**",
       "next-env.d.ts",
+      "jest.config.js",
+      "jest.setup.js",
     ],
     rules: {
       "@typescript-eslint/no-explicit-any": "off",

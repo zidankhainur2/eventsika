@@ -23,19 +23,21 @@ export default function SaveEventButton({
 
   const handleClick = () => {
     if (!user) {
-      router.push("/login");
-      return;
+      toast.error("Akses Ditolak", {
+        description: "Anda harus login terlebih dahulu untuk menyimpan event.",
+        action: {
+          label: "Login",
+          onClick: () => router.push("/login"),
+        },
+      });
     }
 
     startTransition(async () => {
-      // Optimistic UI update
       setIsSaved(!isSaved);
 
       const result = await toggleSaveEvent(eventId, isSaved);
       if (result?.error) {
-        // Jika gagal, kembalikan state ke semula dan tampilkan error
         setIsSaved(isSaved);
-        toast.error("Gagal", { description: result.error });
       }
     });
   };
