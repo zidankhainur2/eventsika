@@ -10,6 +10,8 @@ import { createClient } from "@/utils/supabase/server";
 import { EmptyState } from "@/components/EmptyState";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
+import EventBannerCarousel from "@/components/EventBannerCarousel";
+import CategoryFilters from "@/components/CategoryFilters";
 
 export default async function HomePage({
   searchParams,
@@ -31,20 +33,23 @@ export default async function HomePage({
     recommendedEvents,
     majorRelatedEvents,
     allUpcomingEvents,
-    savedEventIds, // <-- Error #1 teratasi di sini
+    savedEventIds,
   ] = await Promise.all([
     getRecommendedEvents(supabase, user),
     getMajorRelatedEvents(supabase, user),
     getAllUpcomingEvents(supabase, { search, category }),
-    getSavedEventIds(supabase, user), // <-- FIX: Tambahkan pemanggilan fungsi ini
+    getSavedEventIds(supabase, user),
   ]);
 
   const isSearching = search || category;
 
+  const bannerEvents = allUpcomingEvents.slice(0, 5);
+
   return (
     <main className="min-h-screen py-8 sm:py-12">
-      <Hero />
-      <div id="events" className="mt-12 space-y-8">
+      <EventBannerCarousel events={bannerEvents} />
+      <CategoryFilters />
+      <div id="events" className="mt-4 space-y-8">
         {/* FIX: Tambahkan props 'savedEventIds' dan 'user' */}
         <EventCarousel
           title="Rekomendasi Untukmu"

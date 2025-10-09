@@ -76,9 +76,11 @@ export async function getAllUpcomingEvents(
     );
   }
 
-  // Filter berdasarkan kategori (category)
   if (category) {
-    query = query.eq("category", category);
+    // Ubah string kategori menjadi array
+    const categories = category.split(",");
+    // Gunakan filter .in() untuk mencocokkan dengan salah satu nilai dalam array
+    query = query.in("category", categories);
   }
 
   const { data, error } = await query;
