@@ -10,9 +10,11 @@
     "test": "jest"
   },
   "dependencies": {
+    "@radix-ui/react-slot": "^1.2.3",
     "@supabase/auth-helpers-nextjs": "^0.10.0",
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.56.1",
+    "@tanstack/react-query": "^5.90.5",
     "@types/nprogress": "^0.2.3",
     "@vercel/speed-insights": "^1.2.0",
     "framer-motion": "^12.23.12",
@@ -22,7 +24,8 @@
     "react-dom": "19.1.0",
     "react-icons": "^5.5.0",
     "sonner": "^2.0.7",
-    "use-debounce": "^10.0.6"
+    "use-debounce": "^10.0.6",
+    "zustand": "^5.0.8"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.28.3",

@@ -34,7 +34,7 @@ function slugify(text: string): string {
 export async function addEvent(
   prevState: FormState,
   formData: FormData
-): Promise<FormState> {
+): Promise<FormState & { slug?: string }> {
   const supabase = createClient();
   const {
     data: { user },
@@ -85,10 +85,11 @@ export async function addEvent(
   } = supabase.storage.from("event-posters").getPublicUrl(filePath);
 
   const title = formData.get("title") as string;
+  const slug = slugify(title);
 
   const eventData = {
     title: title,
-    slug: slugify(title),
+    slug: slug,
     organizer: formData.get("organizer") as string,
     category: formData.get("category") as string,
     location: formData.get("location") as string,
@@ -107,12 +108,16 @@ export async function addEvent(
     };
   }
 
-  const { error } = await supabase.from("events").insert([
-    {
-      ...eventData,
-      organizer_id: user.id,
-    },
-  ]);
+  const { data, error } = await supabase
+    .from("events")
+    .insert([
+      {
+        ...eventData,
+        organizer_id: user.id,
+      },
+    ])
+    .select("slug")
+    .single();
 
   if (error) {
     console.error("Error inserting data:", error);
@@ -123,13 +128,17 @@ export async function addEvent(
   }
 
   revalidatePath("/");
-  redirect("/");
+  return {
+    message: "Event berhasil ditambahkan!",
+    type: "success",
+    slug: data?.slug,
+  };
 }
 
 export async function updateEvent(
   prevState: FormState,
   formData: FormData
-): Promise<FormState> {
+): Promise<FormState & { slug?: string }> {
   const supabase = createClient();
   const {
     data: { user },
@@ -167,14 +176,13 @@ export async function updateEvent(
 
     const { error: uploadError } = await supabase.storage
       .from("event-posters")
-      .upload(filePath, imageFile, { upsert: true }); // upsert: true untuk menimpa jika ada
+      .upload(filePath, imageFile, { upsert: true }); 
 
     if (uploadError) {
       console.error("Upload error:", uploadError);
       return { message: "Gagal mengunggah gambar baru.", type: "error" };
     }
 
-    // Dapatkan URL gambar baru
     const {
       data: { publicUrl },
     } = supabase.storage.from("event-posters").getPublicUrl(filePath);
@@ -182,10 +190,11 @@ export async function updateEvent(
   }
 
   const title = formData.get("title") as string;
+  const slug = slugify(title);
 
   const eventData = {
     title: title,
-    slug: slugify(title),
+    slug: slug,
     organizer: formData.get("organizer") as string,
     category: formData.get("category") as string,
     location: formData.get("location") as string,
@@ -196,11 +205,10 @@ export async function updateEvent(
     target_majors: targetMajors,
   };
 
-  // Lakukan update ke database
   const { error } = await supabase
     .from("events")
     .update(eventData)
-    .match({ id: eventId, organizer_id: user.id }); // PENTING: Cek keamanan ganda
+    .match({ id: eventId, organizer_id: user.id });
 
   if (error) {
     console.error("Error updating data:", error);
@@ -210,11 +218,14 @@ export async function updateEvent(
     };
   }
 
-  // Revalidate path yang relevan & redirect
   revalidatePath("/");
-  revalidatePath(`/event/${eventId}`);
+  revalidatePath(`/event/${slug}`);
   revalidatePath("/organizer/dashboard");
-  redirect("/organizer/dashboard");
+  return {
+    message: "Event berhasil diperbarui!",
+    type: "success",
+    slug: slug,
+  };
 }
 
 export async function updateUserPreferences(

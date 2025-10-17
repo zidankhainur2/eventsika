@@ -1,0 +1,141 @@
+import { createClient } from "@/utils/supabase/client";
+import { type Event } from "./types";
+import { type User } from "@supabase/supabase-js";
+import { type Profile } from "./types";
+
+const supabase = createClient();
+
+export const getAllUpcomingEvents = async ({
+  search,
+  category,
+}: {
+  search?: string;
+  category?: string;
+}): Promise<Event[]> => {
+  let query = supabase
+    .from("events")
+    .select("*")
+    .gte("event_date", new Date().toISOString())
+    .order("event_date", { ascending: true });
+
+  if (search) {
+    query = query.or(
+      `title.ilike.%${search}%,organizer.ilike.%${search}%,description.ilike.%${search}%`
+    );
+  }
+
+  if (category) {
+    const categories = category.split(",");
+    query = query.in("category", categories);
+  }
+
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+  return data || [];
+};
+
+export const getRecommendedEvents = async (): Promise<Event[]> => {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data, error } = await supabase.rpc(
+    "get_recommended_events_for_user",
+    {
+      p_user_id: user.id,
+    }
+  );
+
+  if (error) throw new Error(error.message);
+  return data || [];
+};
+
+export const getMajorRelatedEvents = async (): Promise<Event[]> => {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data, error } = await supabase.rpc(
+    "get_major_related_events_for_user",
+    { p_user_id: user.id }
+  );
+  if (error) throw new Error(error.message);
+  return data || [];
+};
+
+export const getSavedEventIds = async (): Promise<Set<string>> => {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return new Set();
+
+  const { data, error } = await supabase
+    .from("saved_events")
+    .select("event_id")
+    .eq("user_id", user.id);
+
+  if (error) {
+    console.error("Error fetching saved event IDs:", error);
+    return new Set();
+  }
+  return new Set(data.map((item) => item.event_id));
+};
+
+export const getUser = async (): Promise<User | null> => {
+  const { data } = await supabase.auth.getUser();
+  return data.user;
+};
+
+export const getEventBySlug = async (slug: string): Promise<Event> => {
+  const { data, error } = await supabase
+    .from("events")
+    .select("*")
+    .eq("slug", slug)
+    .single();
+
+  if (error) {
+    throw new Error(error.message || "Event tidak ditemukan.");
+  }
+  return data;
+};
+
+export async function getEventsByOrganizer(): Promise<Event[]> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data, error } = await supabase
+    .from("events")
+    .select("*")
+    .eq("organizer_id", user.id)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Error fetching organizer events:", error);
+    throw new Error(error.message);
+  }
+
+  return data || [];
+}
+
+export async function getProfile(): Promise<Profile | null> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", user.id)
+    .single();
+
+  if (error) {
+    console.error("Error fetching profile:", error);
+    throw new Error(error.message);
+  }
+  return data;
+}

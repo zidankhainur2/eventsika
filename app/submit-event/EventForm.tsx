@@ -1,9 +1,11 @@
 "use client";
 
-import { useActionState, useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useFormStatus } from "react-dom";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
@@ -11,16 +13,7 @@ import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { CATEGORIES, MAJORS } from "@/lib/constants";
 import { type Event } from "@/lib/types";
-
-type FormState = {
-  message: string;
-  type: "success" | "error" | null;
-};
-
-const initialState: FormState = {
-  message: "",
-  type: null,
-};
+import { useState } from "react";
 
 function SubmitButton({ text }: { text: string }) {
   const { pending } = useFormStatus();
@@ -32,31 +25,66 @@ function SubmitButton({ text }: { text: string }) {
 }
 
 interface EventFormProps {
-  // Action bisa untuk 'addEvent' atau 'updateEvent'
-  formAction: (prevState: FormState, formData: FormData) => Promise<FormState>;
-  event?: Event | null; // Data event untuk mode edit
+  formAction: (
+    prevState: any,
+    formData: FormData
+  ) => Promise<FormState & { slug?: string }>;
+  event?: Event | null;
   buttonText: string;
 }
+
+type FormState = {
+  message: string;
+  type: "success" | "error" | null;
+};
+
+const initialState: FormState = {
+  message: "",
+  type: null,
+};
 
 export default function EventForm({
   formAction,
   event = null,
   buttonText,
 }: EventFormProps) {
-  const [state, dispatch] = useActionState(formAction, initialState);
+  const router = useRouter();
+  const queryClient = useQueryClient();
   const [imagePreview, setImagePreview] = useState<string | null>(
     event?.image_url || null
   );
 
-  useEffect(() => {
-    if (state.message && state.type) {
-      if (state.type === "success") {
-        toast.success("Berhasil", { description: state.message });
-      } else {
-        toast.error("Gagal", { description: state.message });
+  const { mutate, isPending } = useMutation({
+    mutationFn: async (formData: FormData) => {
+      const result = await formAction(null, formData);
+      if (result.type === "error") {
+        throw new Error(result.message);
       }
-    }
-  }, [state]);
+      return result;
+    },
+    onSuccess: (data) => {
+      toast.success("Berhasil!", { description: data.message });
+
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+      queryClient.invalidateQueries({ queryKey: ["organizer-events"] });
+
+      if (event) {
+        router.push("/organizer/dashboard");
+      } else {
+        router.push(`/event/${data.slug}`);
+      }
+      router.refresh();
+    },
+    onError: (error) => {
+      toast.error("Gagal", { description: error.message });
+    },
+  });
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    mutate(formData);
+  };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -80,8 +108,7 @@ export default function EventForm({
   };
 
   return (
-    <form action={dispatch} className="space-y-8">
-      {/* Input tersembunyi untuk ID event saat mode edit */}
+    <form onSubmit={handleSubmit} className="space-y-8">
       {event && <input type="hidden" name="id" value={event.id} />}
       {event && (
         <input
@@ -200,7 +227,6 @@ export default function EventForm({
           Pilih {"Umum"} atau tentukan jurusan spesifik.
         </p>
         <div className="space-y-2">
-          {/* Checkbox untuk Umum */}
           <div className="flex items-center">
             <input
               id="umum"
@@ -223,7 +249,6 @@ export default function EventForm({
             <span className="bg-white px-2 text-gray-500">atau</span>
           </div>
         </div>
-        {/* Daftar Checkbox untuk Jurusan Spesifik */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-60 overflow-y-auto rounded-lg border p-4">
           {MAJORS.map((major) => (
             <div key={major} className="flex items-center">
@@ -260,20 +285,10 @@ export default function EventForm({
         </div>
       </fieldset>
 
-      {state?.message && (
-        <p
-          className={`text-sm p-3 rounded-md ${
-            state.type === "error"
-              ? "bg-red-100 text-red-700"
-              : "bg-green-100 text-green-700"
-          }`}
-        >
-          {state.message}
-        </p>
-      )}
-
       <div className="pt-4">
-        <SubmitButton text={buttonText} />
+        <Button type="submit" disabled={isPending}>
+          {isPending ? "Memproses..." : buttonText}
+        </Button>
       </div>
     </form>
   );

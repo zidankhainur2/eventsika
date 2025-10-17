@@ -7,6 +7,7 @@ import { ProgressBar } from "@/components/ProgressBar";
 import Navbar from "@/components/Navbar";
 import { Suspense } from "react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import Providers from "@/components/Providers";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -78,29 +79,31 @@ export default function RootLayout({
       <body
         className={`${poppins.className} bg-neutral-light flex flex-col min-h-screen`}
       >
-        <a
-          href="#main-content"
-          className="sr-only focus:not-sr-only focus:absolute focus:z-50 top-0 left-0 bg-accent text-on-accent p-4"
-        >
-          Lewati ke konten utama
-        </a>
+        <Providers>
+          <a
+            href="#main-content"
+            className="sr-only focus:not-sr-only focus:absolute focus:z-50 top-0 left-0 bg-accent text-on-accent p-4"
+          >
+            Lewati ke konten utama
+          </a>
 
-        <Toaster position="top-center" richColors />
-        <Suspense fallback={null}>
-          <ProgressBar />
-        </Suspense>
+          <Toaster position="top-center" richColors />
+          <Suspense fallback={null}>
+            <ProgressBar />
+          </Suspense>
 
-        <Navbar />
+          <Navbar />
 
-        <main
-          id="main-content"
-          className="w-full max-w-6xl mx-auto px-4 flex-grow"
-        >
-          {children}
-          <SpeedInsights />
-        </main>
+          <main
+            id="main-content"
+            className="w-full max-w-6xl mx-auto px-4 flex-grow"
+          >
+            {children}
+            <SpeedInsights />
+          </main>
 
-        <Footer />
+          <Footer />
+        </Providers>
       </body>
     </html>
   );

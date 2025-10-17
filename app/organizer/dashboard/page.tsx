@@ -1,22 +1,35 @@
-import { createClient } from "@/utils/supabase/server";
-import { redirect } from "next/navigation";
-import { getEventsByOrganizer } from "@/lib/supabase";
-import { Card } from "@/components/ui/Card";
-import Breadcrumb from "@/components/Breadcrumb";
+"use client";
+
 import Link from "next/link";
 import { FiPlusSquare } from "react-icons/fi";
+import { Card } from "@/components/ui/Card";
+import Breadcrumb from "@/components/Breadcrumb";
+import { useOrganizerEvents } from "@/lib/hooks/useEvents";
 
-export default async function OrganizerDashboard() {
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+function DashboardSkeleton() {
+  return (
+    <div className="space-y-4 animate-pulse">
+      {Array.from({ length: 3 }).map((_, i) => (
+        <div
+          key={i}
+          className="flex items-center justify-between p-4 border rounded-lg bg-gray-50 h-20"
+        >
+          <div className="space-y-2">
+            <div className="h-5 w-48 bg-gray-200 rounded-md"></div>
+            <div className="h-4 w-32 bg-gray-200 rounded-md"></div>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="h-5 w-12 bg-gray-200 rounded-md"></div>
+            <div className="h-5 w-12 bg-gray-200 rounded-md"></div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
-  if (!user) {
-    redirect("/login");
-  }
-
-  const events = await getEventsByOrganizer(supabase, user.id);
+export default function OrganizerDashboard() {
+  const { events, isLoading, error } = useOrganizerEvents();
 
   return (
     <main className="min-h-screen py-8 sm:py-12">
@@ -39,7 +52,13 @@ export default async function OrganizerDashboard() {
         <h2 className="text-xl font-semibold text-neutral-dark mb-4">
           Event yang Anda Kelola
         </h2>
-        {events.length > 0 ? (
+        {isLoading ? (
+          <DashboardSkeleton />
+        ) : error ? (
+          <p className="text-red-500 text-center py-8">
+            Gagal memuat event: {error.message}
+          </p>
+        ) : events.length > 0 ? (
           <div className="space-y-4">
             {events.map((event) => (
               <div

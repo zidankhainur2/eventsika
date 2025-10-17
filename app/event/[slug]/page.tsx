@@ -1,14 +1,13 @@
-import { getEventBySlug } from "@/lib/supabase";
+"use client";
+
 import Image from "next/image";
 import { FaCalendarAlt, FaMapMarkerAlt, FaUserFriends } from "react-icons/fa";
 import StickyRegisterButton from "@/components/StickyRegisterButton";
-import { createClient } from "@/utils/supabase/server";
 import SaveEventButton from "@/components/SaveEventButton";
 import RegisterButton from "@/components/RegisterButton";
-
-type EventDetailPageProps = {
-  params: { slug: string };
-};
+import { useParams } from "next/navigation";
+import { useEventBySlug } from "@/lib/hooks/useEvents";
+import { EmptyState } from "@/components/EmptyState";
 
 function InfoItem({
   icon,
@@ -30,24 +29,62 @@ function InfoItem({
   );
 }
 
-export default async function EventDetailPage({
-  params,
-}: EventDetailPageProps) {
-  const event = await getEventBySlug(params.slug);
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+function EventDetailSkeleton() {
+  return (
+    <div className="max-w-5xl mx-auto animate-pulse">
+      <div className="relative w-full h-60 sm:h-96 rounded-xl bg-gray-200 mb-8"></div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 bg-white p-6 sm:p-8 rounded-xl shadow-md">
+          <div className="h-6 w-1/4 bg-gray-200 rounded-full mb-4"></div>
+          <div className="h-10 w-3/4 bg-gray-200 rounded-md mb-8"></div>
+          <div className="h-6 w-1/3 bg-gray-200 rounded-md mb-4"></div>
+          <div className="space-y-3">
+            <div className="h-4 bg-gray-200 rounded-md"></div>
+            <div className="h-4 bg-gray-200 rounded-md"></div>
+            <div className="h-4 w-5/6 bg-gray-200 rounded-md"></div>
+          </div>
+        </div>
+        <aside className="lg:col-span-1">
+          <div className="bg-white p-6 rounded-xl shadow-md sticky top-24">
+            <div className="h-8 w-1/2 bg-gray-200 rounded-md mb-6"></div>
+            <div className="space-y-5">
+              <div className="h-12 bg-gray-200 rounded-md"></div>
+              <div className="h-12 bg-gray-200 rounded-md"></div>
+              <div className="h-12 bg-gray-200 rounded-md"></div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  );
+}
 
-  let isSaved = false;
-  if (user) {
-    const { data: savedEventData } = await supabase
-      .from("saved_events")
-      .select("id")
-      .match({ user_id: user.id, event_id: event.id })
-      .single();
-    isSaved = !!savedEventData;
+export default function EventDetailPage() {
+  const params = useParams();
+  const slug = params.slug as string | null;
+
+  const { event, user, isSaved, isLoading, error } = useEventBySlug(slug);
+
+  if (isLoading) {
+    return (
+      <main className="py-8 sm:py-12">
+        <EventDetailSkeleton />
+      </main>
+    );
   }
+
+  if (error || !event) {
+    return (
+      <main className="py-8 sm:py-12">
+        <EmptyState
+          title="Event Tidak Ditemukan"
+          message="Maaf, kami tidak dapat menemukan event yang Anda cari."
+        />
+      </main>
+    );
+  }
+
+  const normalizedUser = user ?? null;
 
   return (
     <>
@@ -65,7 +102,7 @@ export default async function EventDetailPage({
               <SaveEventButton
                 eventId={event.id}
                 isSavedInitial={isSaved}
-                user={user}
+                user={normalizedUser}
               />
             </div>
           </div>
@@ -111,14 +148,20 @@ export default async function EventDetailPage({
                   </InfoItem>
                 </div>
                 <div className="mt-8 hidden lg:block">
-                  <RegisterButton link={event.registration_link} user={user} />
+                  <RegisterButton
+                    link={event.registration_link}
+                    user={normalizedUser}
+                  />
                 </div>
               </div>
             </aside>
           </div>
         </div>
       </main>
-      <StickyRegisterButton link={event.registration_link} user={user} />
+      <StickyRegisterButton
+        link={event.registration_link}
+        user={normalizedUser}
+      />
     </>
   );
 }

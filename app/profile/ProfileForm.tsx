@@ -1,35 +1,58 @@
 "use client";
 
-import { useFormStatus } from "react-dom";
+import { useState } from "react";
+import Image from "next/image";
+import { toast } from "sonner";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+
 import { type Profile } from "@/lib/types";
 import { updateProfile } from "@/app/action";
 import { Label } from "@/components/ui/Label";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
-import { useActionState, useState } from "react";
-import Image from "next/image";
 import { MAJORS } from "@/lib/constants";
 import { Select } from "@/components/ui/Select";
 
-const initialState = {
-  message: "",
-  type: "success" as "success" | "error",
-};
-
-function SubmitButton() {
-  const { pending } = useFormStatus();
+function SubmitButton({ isPending }: { isPending: boolean }) {
   return (
-    <Button type="submit" disabled={pending}>
-      {pending ? "Menyimpan..." : "Simpan Perubahan"}
+    <Button type="submit" disabled={isPending}>
+      {isPending ? "Menyimpan..." : "Simpan Perubahan"}
     </Button>
   );
 }
 
 export default function ProfileForm({ profile }: { profile: Profile | null }) {
-  const [state, formAction] = useActionState(updateProfile, initialState);
+  const queryClient = useQueryClient();
   const [imagePreview, setImagePreview] = useState<string | null>(
     profile?.avatar_url || null
   );
+
+  const { mutate, isPending } = useMutation({
+    mutationFn: async (formData: FormData) => {
+      const result = await updateProfile(
+        { message: "", type: "success" },
+        formData
+      );
+      if (result.type === "error") {
+        throw new Error(result.message);
+      }
+      return result;
+    },
+    onSuccess: (data) => {
+      toast.success("Profil Diperbarui!", { description: data.message });
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      queryClient.invalidateQueries({ queryKey: ["user"] });
+    },
+    onError: (error) => {
+      toast.error("Gagal Memperbarui", { description: error.message });
+    },
+  });
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    mutate(formData);
+  };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -43,7 +66,7 @@ export default function ProfileForm({ profile }: { profile: Profile | null }) {
   };
 
   return (
-    <form action={formAction} className="space-y-6 mt-6">
+    <form onSubmit={handleSubmit} className="space-y-6 mt-6">
       <h2 className="text-xl font-semibold text-primary border-b pb-2">
         Informasi Pribadi
       </h2>
@@ -132,20 +155,8 @@ export default function ProfileForm({ profile }: { profile: Profile | null }) {
         />
       </div>
 
-      {state?.message && (
-        <p
-          className={`text-sm p-3 rounded-md ${
-            state.type === "error"
-              ? "bg-red-100 text-red-700"
-              : "bg-green-100 text-green-700"
-          }`}
-        >
-          {state.message}
-        </p>
-      )}
-
       <div>
-        <SubmitButton />
+        <SubmitButton isPending={isPending} />
       </div>
     </form>
   );
