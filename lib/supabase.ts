@@ -56,9 +56,11 @@ export async function getAllUpcomingEvents(
   {
     search,
     category,
+    limit,
   }: {
     search?: string;
     category?: string;
+    limit?: number;
   }
 ): Promise<Event[]> {
   let query = supabase
@@ -67,20 +69,20 @@ export async function getAllUpcomingEvents(
     .gte("event_date", new Date().toISOString())
     .order("event_date", { ascending: true });
 
-  // Filter berdasarkan pencarian (search)
   if (search) {
     const searchTerm = `%${search}%`;
-    // Mencari di kolom title, organizer, atau description
     query = query.or(
       `title.ilike.${searchTerm},organizer.ilike.${searchTerm},description.ilike.${searchTerm}`
     );
   }
 
   if (category) {
-    // Ubah string kategori menjadi array
     const categories = category.split(",");
-    // Gunakan filter .in() untuk mencocokkan dengan salah satu nilai dalam array
     query = query.in("category", categories);
+  }
+
+  if (limit) {
+    query = query.limit(limit);
   }
 
   const { data, error } = await query;
