@@ -1,17 +1,22 @@
 import type { Metadata } from "next";
-import { Poppins } from "next/font/google";
+import { Fredoka, Inter } from "next/font/google";
 import "./globals.css";
-import Footer from "@/components/Footer";
 import { Toaster } from "sonner";
 import { ProgressBar } from "@/components/ProgressBar";
-import Navbar from "@/components/Navbar";
 import { Suspense } from "react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import Providers from "@/components/Providers";
 
-const poppins = Poppins({
+const inter = Inter({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  display: "swap",
+  variable: "--font-body",
+});
+
+const fredoka = Fredoka({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-heading",
 });
 
 export const metadata: Metadata = {
@@ -77,32 +82,15 @@ export default function RootLayout({
   return (
     <html lang="id" className="scroll-smooth">
       <body
-        className={`${poppins.className} bg-neutral-light flex flex-col min-h-screen`}
+        className={`${inter.variable} ${fredoka.variable} bg-background text-foreground flex flex-col min-h-screen`}
       >
         <Providers>
-          <a
-            href="#main-content"
-            className="sr-only focus:not-sr-only focus:absolute focus:z-50 top-0 left-0 bg-accent text-on-accent p-4"
-          >
-            Lewati ke konten utama
-          </a>
-
           <Toaster position="top-center" richColors />
           <Suspense fallback={null}>
             <ProgressBar />
           </Suspense>
-
-          <Navbar />
-
-          <main
-            id="main-content"
-            className="w-full max-w-6xl mx-auto px-4 flex-grow"
-          >
-            {children}
-            <SpeedInsights />
-          </main>
-
-          <Footer />
+          {children} {/* Ini akan merender layout dari (main) atau (auth) */}
+          <SpeedInsights />
         </Providers>
       </body>
     </html>

@@ -78,17 +78,24 @@ export function useEventBySlug(slug: string | null) {
 
   const {
     data: event,
-    isLoading,
-    error,
+    isLoading: isEventLoading,
+    error: eventError,
   } = useQuery({
     queryKey: ["event", slug],
     queryFn: () => queries.getEventBySlug(slug!),
     enabled: !!slug,
   });
 
-  const isSaved = !!event && savedEventIds.has(event.id);
+  const { data: relatedEvents = [], isLoading: isRelatedLoading } = useQuery({
+    queryKey: ["events", "related", event?.category, event?.id],
+    queryFn: () => queries.getRelatedEvents(event!.category, event!.id),
+    enabled: !!event,
+  });
 
-  return { event, user, isSaved, isLoading, error };
+  const isSaved = !!event && savedEventIds.has(event.id);
+  const isLoading = isEventLoading || isRelatedLoading;
+
+  return { event, user, isSaved, relatedEvents, isLoading, error: eventError };
 }
 
 export function useOrganizerEvents() {
@@ -115,4 +122,23 @@ export function useProfile() {
   });
 
   return { profile, isLoading, error };
+}
+
+export function useSavedEvents() {
+  const { data: user } = useQuery({
+    queryKey: ["user"],
+    queryFn: queries.getUser,
+  });
+
+  const {
+    data: events = [],
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["savedEvents", "details"],
+    queryFn: queries.getSavedEvents,
+    enabled: !!user,
+  });
+
+  return { events, user, isLoading, error };
 }

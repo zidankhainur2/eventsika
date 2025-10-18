@@ -4,7 +4,7 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useDebouncedCallback } from "use-debounce";
 import { FiSearch } from "react-icons/fi";
-import { Input } from "./ui/Input";
+import { Input } from "./ui/input";
 
 export default function Searchbar() {
   const searchParams = useSearchParams();

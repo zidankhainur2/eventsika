@@ -139,3 +139,50 @@ export async function getProfile(): Promise<Profile | null> {
   }
   return data;
 }
+
+export const getRelatedEvents = async (
+  category: string,
+  currentEventId: string
+): Promise<Event[]> => {
+  if (!category || !currentEventId) return [];
+
+  const { data, error } = await supabase
+    .from("events")
+    .select("*")
+    .eq("category", category)
+    .neq("id", currentEventId)
+    .gte("event_date", new Date().toISOString())
+    .limit(3);
+  if (error) {
+    console.error("Error fetching related events:", error);
+    return [];
+  }
+  return data || [];
+};
+
+type SavedEventRow = {
+  events: Event | null;
+};
+
+export async function getSavedEvents(): Promise<Event[]> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data, error } = await supabase
+    .from("saved_events")
+    .select("events(*)")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+    .returns<SavedEventRow[]>();
+
+  if (error) {
+    console.error("Error fetching saved events:", error);
+    throw new Error(error.message);
+  }
+
+  return (data ?? [])
+    .map((item) => item.events)
+    .filter((e): e is Event => Boolean(e));
+}

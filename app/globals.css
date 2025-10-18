@@ -3,33 +3,101 @@
 @tailwind utilities;
 
 @layer base {
-  * {
-    box-sizing: border-box;
+  :root {
+    /* ========================================
+       Variabel Warna Kustom EventSika
+       ======================================== */
+    --font-heading: "Fredoka", sans-serif;
+    --font-body: "Inter", sans-serif;
+
+    /* Warna Utama kita dalam format HSL */
+    --app-background: 0 0% 98%; /* #FAFAFA */
+    --app-foreground: 220 29% 10%; /* #111827 (text-primary) */
+    --app-card: 0 0% 100%; /* #FFFFFF (surface) */
+    --app-card-foreground: 220 29% 10%; /* #111827 */
+    --app-primary: 0 60% 35%; /* #A62929 */
+    --app-primary-foreground: 0 0% 100%; /* #FFFFFF */
+    --app-accent: 45 93% 57%; /* #F4C430 */
+    --app-accent-foreground: 28 80% 25%; /* #78350F */
+    --app-border: 220 13% 91%; /* #E5E7EB */
+    --app-input: 220 13% 91%;
+    --app-ring: 217 91% 60%; /* #3B82F6 (focus-ring) */
+
+    /* Warna default shadcn lainnya (bisa kita kustomisasi nanti) */
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    /* Radius */
+    --radius: 0.75rem; /* Menggunakan --radius-lg sebagai basis */
   }
 
-  html {
-    scroll-behavior: smooth;
-  }
-
-  body {
-    font-family: "Poppins", sans-serif;
-  }
-
-  html,
-  body,
-  #__next {
-    min-height: 100vh;
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
   }
 }
 
-@layer components {
-  .btn-primary {
-    @apply bg-primary text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-900 transition-all duration-200;
-  }
+:root {
+  --background: var(--app-background);
+  --foreground: var(--app-foreground);
+  --card: var(--app-card);
+  --card-foreground: var(--app-card-foreground);
+  --popover: var(--app-card);
+  --popover-foreground: var(--app-card-foreground);
+  --primary: var(--app-primary);
+  --primary-foreground: var(--app-primary-foreground);
+  --accent: var(--app-accent);
+  --accent-foreground: var(--app-accent-foreground);
+  --border: var(--app-border);
+  --input: var(--app-input);
+  --ring: var(--app-ring);
+}
 
-  .btn-accent {
-    @apply bg-accent text-on-accent px-6 py-3 rounded-lg font-semibold hover:bg-yellow-500 transition-all duration-200;
-  }
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+html,
+body,
+#__next {
+  min-height: 100vh;
+}
+
+* {
+  @apply border-border;
+}
+body {
+  @apply bg-background text-foreground;
 }
 
 /* NProgress styling */
@@ -64,4 +132,13 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
 }

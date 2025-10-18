@@ -1,11 +1,13 @@
-// components/Navbar.tsx
 import Image from "next/image";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/server";
+import { FiHeart, FiCalendar } from "react-icons/fi";
+
 import { type Profile } from "@/lib/types";
 import MobileMenuContainer from "./MobileMenuContainer";
-import Searchbar from "./Searchbar"; // Import komponen baru
-import UserMenu from "./UserMenu"; // Import komponen baru
+import Searchbar from "./Searchbar";
+import UserMenu from "./UserMenu";
+import { Button } from "./ui/button";
 
 export default async function Navbar() {
   const supabase = createClient();
@@ -18,7 +20,7 @@ export default async function Navbar() {
     : { data: null };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white/80 backdrop-blur-sm">
+    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur-sm">
       <nav className="max-w-6xl mx-auto flex justify-between items-center h-16 px-4 gap-4">
         {/* Mobile Menu & Logo */}
         <div className="flex items-center gap-2">
@@ -36,51 +38,39 @@ export default async function Navbar() {
               height={32}
               className="w-8 h-8"
             />
-            <span className="text-xl font-bold text-primary hidden sm:block">
+            <span className="font-heading text-xl font-bold text-primary hidden sm:block">
               EventSika
             </span>
           </Link>
         </div>
 
         {/* Search Bar - Center */}
-        <div className="flex-1 flex justify-center">
-          <Searchbar />
+        <div className="flex-1 flex justify-center px-4">
+          <div className="w-full max-w-md">
+            <Searchbar />
+          </div>
         </div>
 
-        <div className="hidden md:flex items-center gap-4">
-          {/* Link untuk Super Admin */}
-          {profile?.role === "super_admin" && (
-            <Link
-              href="/admin"
-              className="text-sm font-medium text-red-600 hover:text-primary transition-colors"
-            >
-              Admin
-            </Link>
-          )}
-
-          {/* Link untuk Organizer & Super Admin */}
-          {(profile?.role === "organizer" ||
-            profile?.role === "super_admin") && (
-            <Link
-              href="/organizer/dashboard"
-              className="text-sm font-medium text-neutral-dark/80 hover:text-primary transition-colors"
-            >
-              Dasbor
-            </Link>
-          )}
-        </div>
-
-        {/* User Menu / Login Button */}
-        <div className="flex items-center">
+        {/* Actions & User Menu */}
+        <div className="flex items-center gap-2">
           {user ? (
-            <UserMenu user={user} profile={profile as Profile | null} />
+            <>
+              <Button variant="ghost" size="icon" asChild>
+                <Link href="/profile/saved-events">
+                  <FiHeart className="h-5 w-5" />
+                  <span className="sr-only">Event Tersimpan</span>
+                </Link>
+              </Button>
+              <Button variant="ghost" size="icon" disabled>
+                <FiCalendar className="h-5 w-5" />
+                <span className="sr-only">Kalender Event</span>
+              </Button>
+              <UserMenu user={user} profile={profile as Profile | null} />
+            </>
           ) : (
-            <Link
-              href="/login"
-              className="py-2 px-4 rounded-md text-sm no-underline bg-accent text-on-accent font-semibold hover:bg-yellow-500 transition-colors"
-            >
-              Login
-            </Link>
+            <Button asChild>
+              <Link href="/login">Login</Link>
+            </Button>
           )}
         </div>
       </nav>

@@ -3,8 +3,8 @@
 
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useDebouncedCallback } from "use-debounce";
-import { Input } from "./ui/Input";
-import { Select } from "./ui/Select";
+import { Input } from "./ui/input";
+import { Select } from "./ui/select";
 import { FiSearch, FiTag } from "react-icons/fi";
 import { CATEGORIES } from "@/lib/constants";
 

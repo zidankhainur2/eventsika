@@ -6,7 +6,7 @@ import Link from "next/link";
 
 import EventCarousel from "@/components/EventCarousel";
 import { EmptyState } from "@/components/EmptyState";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/ui/button";
 import HomePageSkeleton from "./skeletons/HomePageSkeleton";
 
 export default function EventsView() {
@@ -76,9 +76,9 @@ export default function EventsView() {
             title="Belum Ada Event Mendatang"
             message="Saat ini belum ada event yang dijadwalkan. Cek kembali nanti!"
           >
-            <Link href="/submit-event">
-              <Button variant="accent">Submit Event</Button>
-            </Link>
+            <Button asChild size="lg" className="mt-8 font-semibold">
+              <Link href="/submit-event"></Link> Submit Event
+            </Button>
           </EmptyState>
         )}
       </section>
