@@ -2,10 +2,10 @@ import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import { getEventBySlug } from "@/lib/supabase";
 import { Card } from "@/components/ui/card";
-import EventForm from "@/app/submit-event/EventForm";
 import { updateEvent } from "@/app/action";
 import Link from "next/link";
 import { FiArrowLeft } from "react-icons/fi";
+import EventForm from "@/app/(main)/submit-event/EventForm";
 
 type EditEventPageProps = {
   params: { slug: string };
