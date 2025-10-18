@@ -176,7 +176,7 @@ export async function updateEvent(
 
     const { error: uploadError } = await supabase.storage
       .from("event-posters")
-      .upload(filePath, imageFile, { upsert: true }); 
+      .upload(filePath, imageFile, { upsert: true });
 
     if (uploadError) {
       console.error("Upload error:", uploadError);
@@ -470,58 +470,200 @@ export async function updateProfile(
   prevState: FormState,
   formData: FormData
 ): Promise<FormState> {
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  try {
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-  if (!user) {
-    return { message: "Anda harus login.", type: "error" };
-  }
+    if (!user) {
+      return { message: "Anda harus login.", type: "error" };
+    }
 
-  const fullName = formData.get("full_name") as string;
-  const major = formData.get("major") as string;
-  const avatarFile = formData.get("avatar_url") as File;
+    // Validasi input
+    const fullName = formData.get("full_name") as string;
+    const major = formData.get("major") as string;
+    const interests = formData.get("interests") as string;
+    const avatarFile = formData.get("avatar_url") as File;
+    let avatarUrl = formData.get("current_avatar_url") as string;
 
-  let avatarUrl = formData.get("current_avatar_url") as string;
-
-  if (avatarFile && avatarFile.size > 0) {
-    if (avatarFile.size > 1 * 1024 * 1024) {
-      // Batas 1MB
+    // Validasi field required
+    if (!fullName || fullName.trim().length === 0) {
       return {
-        message: "Ukuran avatar tidak boleh lebih dari 1MB.",
+        message: "Nama lengkap wajib diisi.",
         type: "error",
       };
     }
-    const fileExt = avatarFile.name.split(".").pop();
-    const filePath = `${user.id}/avatar.${fileExt}`;
 
-    const { error: uploadError } = await supabase.storage
-      .from("avatars")
-      .upload(filePath, avatarFile, { upsert: true });
-
-    if (uploadError) {
-      return { message: "Gagal mengunggah avatar.", type: "error" };
+    if (!major || major.trim().length === 0) {
+      return {
+        message: "Jurusan wajib dipilih.",
+        type: "error",
+      };
     }
 
+    // Handle avatar upload
+    if (avatarFile && avatarFile.size > 0) {
+      // Validasi ukuran file (5MB)
+      if (avatarFile.size > 5 * 1024 * 1024) {
+        return {
+          message: "Ukuran avatar tidak boleh lebih dari 5MB.",
+          type: "error",
+        };
+      }
+
+      // Validasi tipe file
+      const allowedTypes = [
+        "image/png",
+        "image/jpeg",
+        "image/jpg",
+        "image/webp",
+      ];
+      if (!allowedTypes.includes(avatarFile.type)) {
+        return {
+          message: "Format file tidak valid. Gunakan PNG, JPEG, atau WebP.",
+          type: "error",
+        };
+      }
+
+      const fileExt = avatarFile.name.split(".").pop();
+      const fileName = `avatar-${Date.now()}.${fileExt}`;
+      const filePath = `${user.id}/${fileName}`;
+
+      // Hapus avatar lama jika ada
+      if (avatarUrl) {
+        const oldFilePath = avatarUrl
+          .split("/")
+          .slice(-2)
+          .join("/")
+          .split("?")[0];
+        await supabase.storage.from("avatars").remove([oldFilePath]);
+      }
+
+      // Upload avatar baru
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(filePath, avatarFile, {
+          cacheControl: "3600",
+          upsert: false,
+        });
+
+      if (uploadError) {
+        console.error("Upload error:", uploadError);
+        return {
+          message: `Gagal mengunggah avatar: ${uploadError.message}`,
+          type: "error",
+        };
+      }
+
+      // Dapatkan public URL
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("avatars").getPublicUrl(filePath);
+
+      avatarUrl = `${publicUrl}?t=${new Date().getTime()}`;
+    }
+
+    // Update profile di database
+    const updateData: {
+      full_name: string;
+      major: string;
+      avatar_url: string | null;
+      interests: string | null;
+    } = {
+      full_name: fullName.trim(),
+      major: major.trim(),
+      avatar_url: avatarUrl || null,
+      interests: interests?.trim() || null,
+    };
+
+    const { error: updateError } = await supabase
+      .from("profiles")
+      .update(updateData)
+      .eq("id", user.id);
+
+    if (updateError) {
+      console.error("Update error:", updateError);
+      return {
+        message: `Gagal memperbarui profil: ${updateError.message}`,
+        type: "error",
+      };
+    }
+
+    // Revalidate paths
+    revalidatePath("/profile");
+    revalidatePath("/dashboard");
+
+    return {
+      message: "Profil berhasil diperbarui!",
+      type: "success",
+    };
+  } catch (error) {
+    console.error("Unexpected error:", error);
+    return {
+      message: "Terjadi kesalahan yang tidak terduga. Silakan coba lagi.",
+      type: "error",
+    };
+  }
+}
+
+// Fungsi helper untuk menghapus avatar
+export async function deleteAvatar(): Promise<FormState> {
+  try {
+    const supabase = createClient();
     const {
-      data: { publicUrl },
-    } = supabase.storage.from("avatars").getPublicUrl(filePath);
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    avatarUrl = `${publicUrl}?t=${new Date().getTime()}`;
+    if (!user) {
+      return { message: "Anda harus login.", type: "error" };
+    }
+
+    // Dapatkan avatar URL saat ini
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("avatar_url")
+      .eq("id", user.id)
+      .single();
+
+    if (profile?.avatar_url) {
+      // Hapus file dari storage
+      const filePath = profile.avatar_url
+        .split("/")
+        .slice(-2)
+        .join("/")
+        .split("?")[0];
+      await supabase.storage.from("avatars").remove([filePath]);
+
+      // Update profile untuk menghapus avatar_url
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({
+          avatar_url: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", user.id);
+
+      if (updateError) {
+        return {
+          message: "Gagal menghapus avatar.",
+          type: "error",
+        };
+      }
+    }
+
+    revalidatePath("/profile");
+    return {
+      message: "Avatar berhasil dihapus.",
+      type: "success",
+    };
+  } catch (error) {
+    console.error("Delete avatar error:", error);
+    return {
+      message: "Terjadi kesalahan saat menghapus avatar.",
+      type: "error",
+    };
   }
-
-  const { error: updateError } = await supabase
-    .from("profiles")
-    .update({ full_name: fullName, major, avatar_url: avatarUrl })
-    .eq("id", user.id);
-
-  if (updateError) {
-    return { message: "Gagal memperbarui profil.", type: "error" };
-  }
-
-  revalidatePath("/profile");
-  return { message: "Profil berhasil diperbarui!", type: "success" };
 }
 
 export async function toggleSaveEvent(eventId: string, isSaved: boolean) {
