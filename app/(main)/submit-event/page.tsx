@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
-import { addEvent } from "../action";
 import EventForm from "./EventForm";
+import { addEvent } from "@/app/action";
 
 export default function SubmitEventPage() {
   return (
