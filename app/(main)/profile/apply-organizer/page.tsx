@@ -24,7 +24,7 @@ const initialState: FormState = {
 function SubmitButton() {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" disabled={pending} variant="accent">
+    <Button type="submit" disabled={pending} asChild>
       {pending ? "Mengirim..." : "Kirim Pengajuan"}
     </Button>
   );
