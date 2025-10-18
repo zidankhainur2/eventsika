@@ -9,11 +9,18 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
+
 import { CATEGORIES, MAJORS } from "@/lib/constants";
 import { type Event } from "@/lib/types";
 import { useState } from "react";
+import { Textarea } from "@/components/ui/textarea";
 
 function SubmitButton({ text }: { text: string }) {
   const { pending } = useFormStatus();
@@ -172,20 +179,31 @@ export default function EventForm({
         <div>
           <Label htmlFor="category">Kategori</Label>
           <Select
-            name="category"
-            id="category"
-            required
             defaultValue={event?.category || ""}
+            onValueChange={(value) => {
+              const hiddenInput = document.querySelector<HTMLInputElement>(
+                "input[name='category']"
+              );
+              if (hiddenInput) hiddenInput.value = value;
+            }}
           >
-            <option value="" disabled>
-              Pilih kategori...
-            </option>
-            {CATEGORIES.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat}
-              </option>
-            ))}
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Pilih kategori..." />
+            </SelectTrigger>
+            <SelectContent>
+              {CATEGORIES.map((cat) => (
+                <SelectItem key={cat} value={cat}>
+                  {cat}
+                </SelectItem>
+              ))}
+            </SelectContent>
           </Select>
+          <input
+            type="hidden"
+            name="category"
+            value={event?.category || ""}
+            readOnly
+          />
         </div>
         <div>
           <Label htmlFor="location">Lokasi</Label>

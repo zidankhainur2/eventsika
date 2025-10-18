@@ -1,4 +1,3 @@
-// components/ui/Textarea.tsx
 import { type TextareaHTMLAttributes } from "react";
 
 export function Textarea({
