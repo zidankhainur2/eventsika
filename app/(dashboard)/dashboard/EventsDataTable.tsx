@@ -24,9 +24,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,6 +34,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 
 function EventActions({ event }: { event: Event }) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -154,40 +154,74 @@ export default function EventsDataTable() {
   }
 
   return (
-    <Card>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[40%]">Nama Event</TableHead>
-            <TableHead>Tanggal</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="text-right">Aksi</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {events.map((event) => {
-            const status = getEventStatus(event.event_date);
-            return (
-              <TableRow key={event.id}>
-                <TableCell className="font-medium">{event.title}</TableCell>
-                <TableCell>
-                  {new Date(event.event_date).toLocaleDateString("id-ID", {
-                    day: "numeric",
-                    month: "short",
-                    year: "numeric",
-                  })}
-                </TableCell>
-                <TableCell>
-                  <Badge variant={status.variant}>{status.text}</Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <EventActions event={event} />
-                </TableCell>
+    <>
+      {/* --- Tampilan Desktop (Tabel) --- */}
+      <div className="hidden md:block">
+        <Card>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[40%]">Nama Event</TableHead>
+                <TableHead>Tanggal</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Aksi</TableHead>
               </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
-    </Card>
+            </TableHeader>
+            <TableBody>
+              {events.map((event) => {
+                const status = getEventStatus(event.event_date);
+                return (
+                  <TableRow key={event.id}>
+                    <TableCell className="font-medium">{event.title}</TableCell>
+                    <TableCell>
+                      {new Date(event.event_date).toLocaleDateString("id-ID", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={status.variant}>{status.text}</Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <EventActions event={event} />
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </Card>
+      </div>
+
+      {/* --- Tampilan Mobile (Card List) --- */}
+      <div className="block md:hidden space-y-4">
+        {events.map((event) => {
+          const status = getEventStatus(event.event_date);
+          return (
+            <Card key={event.id} className="p-4">
+              <div className="flex justify-between items-start">
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold truncate pr-2">{event.title}</p>
+                  <div className="flex items-center gap-2 mt-2">
+                    <Badge variant={status.variant}>{status.text}</Badge>
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(event.event_date).toLocaleDateString("id-ID", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex-shrink-0">
+                  <EventActions event={event} />
+                </div>
+              </div>
+            </Card>
+          );
+        })}
+      </div>
+    </>
   );
 }

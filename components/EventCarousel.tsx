@@ -42,7 +42,7 @@ export default function EventCarousel({
 
       {/* Mobile Version */}
       <div className="block sm:hidden">
-        <div className="grid grid-cols-2 gap-4 mb-6">
+        <div className="grid grid-cols-1 xs:grid-cols-2 gap-4 mb-6">
           {events.slice(0, mobileLimit).map((event) => (
             <EventCard
               key={event.id}

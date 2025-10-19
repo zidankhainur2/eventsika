@@ -26,6 +26,7 @@ import { Separator } from "./ui/separator";
 import { signOut } from "@/app/action";
 import { CATEGORIES } from "@/lib/constants";
 import { type Profile } from "@/lib/types";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 
 const categoryConfig = {
   Seminar: {
@@ -85,15 +86,14 @@ export default function MobileMenu({
           <div className="px-6">
             <Link
               href="/profile"
-              className="flex items-center gap-3 rounded-lg p-3 -mx-3 hover:bg-muted"
+              className="flex items-center gap-3 rounded-full p-3 -mx-3 hover:bg-muted"
             >
-              <Image
-                src={avatarUrl}
-                alt="Avatar"
-                width={48}
-                height={48}
-                className="rounded-full"
-              />
+              <Avatar className="h-12 w-12">
+                <AvatarImage src={avatarUrl} alt="Avatar" />
+                <AvatarFallback>
+                  {displayName?.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-sm truncate">{displayName}</p>
                 <p className="text-xs text-muted-foreground">Lihat Profil</p>
