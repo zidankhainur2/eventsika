@@ -7,6 +7,21 @@ export const CATEGORIES = [
   "Olahraga",
 ];
 
+export const INTEREST_OPTIONS = [
+  { label: "Teknologi", emoji: "💻" },
+  { label: "Musik", emoji: "🎵" },
+  { label: "Olahraga", emoji: "⚽" },
+  { label: "Seni", emoji: "🎨" },
+  { label: "Bisnis", emoji: "💼" },
+  { label: "Debat", emoji: "🗣️" },
+  { label: "Fotografi", emoji: "📸" },
+  { label: "Gaming", emoji: "🎮" },
+  { label: "Menulis", emoji: "✍️" },
+  { label: "Film", emoji: "🎬" },
+  { label: "Sosial", emoji: "🤝" },
+  { label: "Keagamaan", emoji: "🕌" },
+];
+
 export const MAJORS = [
   "Agribisnis",
   "Agroteknologi",
