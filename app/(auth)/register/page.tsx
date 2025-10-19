@@ -142,12 +142,7 @@ export default function RegisterPage() {
                 required
               />
             </div>
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="w-full mt-6"
-              asChild
-            >
+            <Button type="submit" disabled={isLoading} className="w-full mt-6">
               {isLoading ? "Memproses..." : "Daftar Akun"}
             </Button>
           </form>

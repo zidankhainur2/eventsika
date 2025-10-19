@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import Image from "next/image";
 import { toast } from "sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
@@ -18,10 +17,12 @@ import {
   SelectContent,
   SelectTrigger,
 } from "@/components/ui/select";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { User } from "lucide-react";
 
 function SubmitButton({ isPending }: { isPending: boolean }) {
   return (
-    <Button type="submit" disabled={isPending}>
+    <Button type="submit" disabled={isPending} className="w-full sm:w-auto">
       {isPending ? "Menyimpan..." : "Simpan Perubahan"}
     </Button>
   );
@@ -93,7 +94,6 @@ export default function ProfileForm({ profile }: { profile: Profile | null }) {
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (file) {
-        // Validasi ukuran file (max 5MB)
         if (file.size > 5 * 1024 * 1024) {
           toast.error("File terlalu besar", {
             description: "Ukuran maksimal file adalah 5MB",
@@ -101,7 +101,6 @@ export default function ProfileForm({ profile }: { profile: Profile | null }) {
           return;
         }
 
-        // Validasi tipe file
         if (!file.type.startsWith("image/")) {
           toast.error("Format file tidak valid", {
             description: "Mohon pilih file gambar (PNG, JPEG, atau WebP)",
@@ -135,152 +134,157 @@ export default function ProfileForm({ profile }: { profile: Profile | null }) {
         queryClient.invalidateQueries({ queryKey: ["profile"] });
       }
     }
-  }, [profile?.avatar_url]);
+  }, [profile?.avatar_url, queryClient]);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 -mt-4">
-      <h2 className="text-xl font-semibold text-primary border-b pb-2">
-        Informasi Pribadi
-      </h2>
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Section: Informasi Pribadi */}
+      <div className="space-y-4">
+        <h2 className="text-lg sm:text-xl font-semibold text-primary border-b pb-3">
+          Informasi Pribadi
+        </h2>
 
-      <div>
-        <Label htmlFor="avatar_url">Foto Profil</Label>
-        <div className="mt-1 flex items-center gap-4">
-          <div className="relative h-20 w-20 flex-shrink-0">
-            <div className="h-full w-full rounded-full overflow-hidden bg-gray-100">
-              {imagePreview ? (
-                <Image
-                  src={imagePreview}
-                  alt="Avatar profil"
-                  fill
-                  className="object-cover rounded-full"
-                  sizes="80px"
-                  priority={false}
-                />
-              ) : (
-                <svg
-                  className="h-full w-full text-gray-300"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                  aria-label="Avatar placeholder"
+        {/* Avatar Upload */}
+        <div className="space-y-3">
+          <Label htmlFor="avatar_url" className="text-sm font-medium">
+            Foto Profil
+          </Label>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            {/* Avatar Preview */}
+            <Avatar className="h-24 w-24 sm:h-20 sm:w-20 ring-2 ring-gray-200">
+              <AvatarImage
+                src={imagePreview || undefined}
+                alt="Avatar profil"
+              />
+              <AvatarFallback className="bg-gray-100">
+                <User className="h-12 w-12 sm:h-10 sm:w-10 text-gray-400" />
+              </AvatarFallback>
+            </Avatar>
+
+            {/* Upload Controls */}
+            <div className="flex-1 w-full space-y-2">
+              <Input
+                id="avatar_url"
+                name="avatar_url"
+                type="file"
+                onChange={handleImageChange}
+                accept="image/png, image/jpeg, image/webp"
+                className="w-full cursor-pointer text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary file:cursor-pointer hover:file:bg-primary/20"
+                aria-describedby="avatar-description"
+              />
+              <p
+                id="avatar-description"
+                className="text-xs text-muted-foreground"
+              >
+                PNG, JPEG atau WebP. Maksimal 5MB.
+              </p>
+              {imagePreview && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRemoveImage}
+                  className="text-xs w-full sm:w-auto"
                 >
-                  <path d="M24 20.993V24H0v-2.993A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
+                  Hapus Foto
+                </Button>
               )}
             </div>
           </div>
-          <div className="flex-1 space-y-2">
-            <Input
-              id="avatar_url"
-              name="avatar_url"
-              type="file"
-              onChange={handleImageChange}
-              accept="image/png, image/jpeg, image/webp"
-              className="w-full cursor-pointer rounded-lg border border-gray-200 bg-white text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary file:cursor-pointer hover:file:bg-primary/20 focus:border-primary focus:ring-2 focus:ring-primary/30 focus:outline-none transition-colors"
-              aria-describedby="avatar-description"
-            />
-            <p
-              id="avatar-description"
-              className="text-xs text-muted-foreground"
-            >
-              PNG, JPEG atau WebP. Maksimal 5MB.
+        </div>
+
+        <input
+          type="hidden"
+          name="current_avatar_url"
+          defaultValue={profile?.avatar_url || ""}
+        />
+
+        {/* Full Name */}
+        <div className="space-y-2">
+          <Label htmlFor="full_name" className="text-sm font-medium">
+            Nama Lengkap <span className="text-destructive">*</span>
+          </Label>
+          <Input
+            type="text"
+            name="full_name"
+            id="full_name"
+            defaultValue={profile?.full_name || ""}
+            required
+            aria-invalid={errors.full_name ? "true" : "false"}
+            aria-describedby={errors.full_name ? "full_name-error" : undefined}
+            className={errors.full_name ? "border-destructive" : ""}
+            placeholder="Masukkan nama lengkap"
+          />
+          {errors.full_name && (
+            <p id="full_name-error" className="text-sm text-destructive">
+              {errors.full_name}
             </p>
-            {imagePreview && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleRemoveImage}
-                className="text-xs"
-              >
-                Hapus Foto
-              </Button>
-            )}
-          </div>
+          )}
+        </div>
+
+        {/* Major */}
+        <div className="space-y-2">
+          <Label htmlFor="major" className="text-sm font-medium">
+            Jurusan <span className="text-destructive">*</span>
+          </Label>
+          <Select name="major" value={major} onValueChange={setMajor} required>
+            <SelectTrigger
+              id="major"
+              aria-invalid={errors.major ? "true" : "false"}
+              className={errors.major ? "border-destructive" : ""}
+            >
+              <SelectValue placeholder="Pilih jurusan..." />
+            </SelectTrigger>
+            <SelectContent>
+              {MAJORS.map((majorOption) => (
+                <SelectItem key={majorOption} value={majorOption}>
+                  {majorOption}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {errors.major && (
+            <p className="text-sm text-destructive">{errors.major}</p>
+          )}
         </div>
       </div>
 
-      <input
-        type="hidden"
-        name="current_avatar_url"
-        defaultValue={profile?.avatar_url || ""}
-      />
+      {/* Section: Preferensi Personalisasi */}
+      <div className="space-y-4 pt-2">
+        <h2 className="text-lg sm:text-xl font-semibold text-primary border-b pb-3">
+          Preferensi Personalisasi
+        </h2>
 
-      <div>
-        <Label htmlFor="full_name">
-          Nama Lengkap <span className="text-destructive">*</span>
-        </Label>
-        <Input
-          type="text"
-          name="full_name"
-          id="full_name"
-          defaultValue={profile?.full_name || ""}
-          required
-          aria-invalid={errors.full_name ? "true" : "false"}
-          aria-describedby={errors.full_name ? "full_name-error" : undefined}
-          className={errors.full_name ? "border-destructive" : ""}
-        />
-        {errors.full_name && (
-          <p id="full_name-error" className="text-sm text-destructive mt-1">
-            {errors.full_name}
-          </p>
-        )}
-      </div>
-
-      <div>
-        <Label htmlFor="major">
-          Jurusan <span className="text-destructive">*</span>
-        </Label>
-        <Select name="major" value={major} onValueChange={setMajor} required>
-          <SelectTrigger
-            id="major"
-            aria-invalid={errors.major ? "true" : "false"}
-            className={errors.major ? "border-destructive" : ""}
+        <div className="space-y-2">
+          <Label htmlFor="interests" className="text-sm font-medium">
+            Minat (pisahkan dengan koma)
+          </Label>
+          <Input
+            type="text"
+            name="interests"
+            id="interests"
+            defaultValue={profile?.interests || ""}
+            placeholder="Contoh: Programming, Desain, Musik"
+            aria-describedby="interests-description"
+          />
+          <p
+            id="interests-description"
+            className="text-xs text-muted-foreground"
           >
-            <SelectValue placeholder="Pilih jurusan..." />
-          </SelectTrigger>
-          <SelectContent>
-            {MAJORS.map((majorOption) => (
-              <SelectItem key={majorOption} value={majorOption}>
-                {majorOption}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {errors.major && (
-          <p className="text-sm text-destructive mt-1">{errors.major}</p>
-        )}
+            Tambahkan minat Anda untuk rekomendasi konten yang lebih personal
+          </p>
+        </div>
       </div>
 
-      <h2 className="text-xl font-semibold text-primary border-b pb-2 pt-4">
-        Preferensi Personalisasi
-      </h2>
-
-      <div>
-        <Label htmlFor="interests">Minat (pisahkan dengan koma)</Label>
-        <Input
-          type="text"
-          name="interests"
-          id="interests"
-          defaultValue={profile?.interests || ""}
-          placeholder="Contoh: Programming, Desain, Musik"
-          aria-describedby="interests-description"
-        />
-        <p
-          id="interests-description"
-          className="text-xs text-muted-foreground mt-1"
-        >
-          Tambahkan minat Anda untuk rekomendasi konten yang lebih personal
-        </p>
-      </div>
-
-      <div className="flex gap-2">
+      {/* Action Buttons */}
+      <div className="flex flex-col sm:flex-row gap-3 pt-2">
         <SubmitButton isPending={isPending} />
         <Button
           type="button"
           variant="outline"
           onClick={() => window.location.reload()}
           disabled={isPending}
+          className="w-full sm:w-auto"
         >
           Reset
         </Button>

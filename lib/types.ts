@@ -14,6 +14,7 @@ export type Event = {
   organizer_id: string | null;
   target_majors: string[] | null;
   slug: string;
+  tags: string[] | null;
 };
 
 export type Profile = {

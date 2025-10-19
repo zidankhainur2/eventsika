@@ -40,14 +40,14 @@ export const getRecommendedEvents = async (): Promise<Event[]> => {
   } = await supabase.auth.getUser();
   if (!user) return [];
 
-  const { data, error } = await supabase.rpc(
-    "get_recommended_events_for_user",
-    {
-      p_user_id: user.id,
-    }
-  );
+  const { data, error } = await supabase.rpc("get_scored_recommended_events", {
+    p_user_id: user.id,
+  });
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    console.error("Error fetching scored recommended events:", error);
+    throw new Error(error.message);
+  }
   return data || [];
 };
 

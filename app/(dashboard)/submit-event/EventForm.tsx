@@ -223,6 +223,25 @@ export default function EventForm({
         </div>
       </fieldset>
 
+      <fieldset className="space-y-6">
+        <legend className="font-heading text-xl font-semibold text-text-primary">
+          Tags & Topik
+        </legend>
+        <div className="grid w-full items-center gap-1.5">
+          <Label htmlFor="tags">Topik Spesifik (pisahkan dengan koma)</Label>
+          <Input
+            id="tags"
+            name="tags"
+            placeholder="Contoh: UI/UX, Desain Grafis, Figma"
+            defaultValue={event?.tags?.join(", ")}
+          />
+          <p className="text-sm text-muted-foreground">
+            Ini akan sangat membantu dalam merekomendasikan eventmu kepada
+            audiens yang tepat.
+          </p>
+        </div>
+      </fieldset>
+
       <fieldset className="space-y-4">
         <legend className="font-heading text-xl font-semibold text-text-primary">
           Target Audiens

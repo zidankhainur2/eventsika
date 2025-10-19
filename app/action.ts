@@ -31,6 +31,15 @@ function slugify(text: string): string {
     .replace(/\-\-+/g, "-"); // Ganti -- ganda dengan satu -
 }
 
+function processTags(formData: FormData): string[] | null {
+  const tagsInput = formData.get("tags") as string;
+  if (!tagsInput) return null;
+  return tagsInput
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter((tag) => tag.length > 0);
+}
+
 export async function addEvent(
   prevState: FormState,
   formData: FormData
@@ -99,6 +108,7 @@ export async function addEvent(
     image_url: publicUrl,
     organizer_id: user.id,
     target_majors: targetMajors,
+    tags: processTags(formData),
   };
 
   if (!eventData.title || !eventData.organizer || !eventData.event_date) {
@@ -203,6 +213,7 @@ export async function updateEvent(
     registration_link: formData.get("registration_link") as string,
     image_url: imageUrl,
     target_majors: targetMajors,
+    tags: processTags(formData),
   };
 
   const { error } = await supabase
@@ -358,7 +369,11 @@ export async function submitOrganizerApplication(
 }
 
 export async function approveOrganizerApplication(
-p0: null, p1: FormData, applicationId: string, userId: string): Promise<FormState> {
+  p0: null,
+  p1: FormData,
+  applicationId: string,
+  userId: string
+): Promise<FormState> {
   // Ubah return type agar tidak null
   const supabase = createClient();
   try {
@@ -391,7 +406,10 @@ p0: null, p1: FormData, applicationId: string, userId: string): Promise<FormStat
 }
 
 export async function rejectOrganizerApplication(
-p0: null, p1: FormData, applicationId: string): Promise<FormState> {
+  p0: null,
+  p1: FormData,
+  applicationId: string
+): Promise<FormState> {
   // Ubah return type agar tidak null
   const supabase = createClient();
   try {
