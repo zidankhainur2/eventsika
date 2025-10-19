@@ -228,7 +228,7 @@ export default function EventForm({
           Target Audiens
         </legend>
         <p className="text-sm text-muted-foreground -mt-2">
-          Pilih "Umum" atau tentukan jurusan spesifik.
+          Pilih &quot;Umum&quot; atau tentukan jurusan spesifik.
         </p>
         <div className="flex items-center space-x-2">
           <Checkbox

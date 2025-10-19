@@ -17,8 +17,8 @@ export function ApplicationActions({
 }) {
   const queryClient = useQueryClient();
 
-  const createMutation = (
-    actionFn: Function,
+  const useCreateMutation = (
+    actionFn: () => Promise<any>,
     successMsg: string,
     errorMsg: string
   ) => {
@@ -38,14 +38,15 @@ export function ApplicationActions({
     });
   };
 
-  const { mutate: approve, isPending: isApproving } = createMutation(
+  // Perbaikan 2: Panggil custom hook dengan benar
+  const { mutate: approve, isPending: isApproving } = useCreateMutation(
     () =>
       approveOrganizerApplication(null, new FormData(), applicationId, userId),
     "Pengajuan Disetujui",
     "Gagal Menyetujui"
   );
 
-  const { mutate: reject, isPending: isRejecting } = createMutation(
+  const { mutate: reject, isPending: isRejecting } = useCreateMutation(
     () => rejectOrganizerApplication(null, new FormData(), applicationId),
     "Pengajuan Ditolak",
     "Gagal Menolak"

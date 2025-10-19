@@ -9,7 +9,6 @@ import { toast } from "sonner";
 import { type Event } from "@/lib/types";
 import { useOrganizerEvents } from "@/lib/hooks/useEvents";
 import { deleteEvent } from "@/app/action";
-import { cn } from "@/lib/utils";
 
 import {
   Table,
@@ -96,8 +95,8 @@ function EventActions({ event }: { event: Event }) {
           <AlertDialogHeader>
             <AlertDialogTitle>Apakah Anda Yakin?</AlertDialogTitle>
             <AlertDialogDescription>
-              Tindakan ini tidak dapat diurungkan. Event "{event.title}" akan
-              dihapus secara permanen dari server.
+              Tindakan ini tidak dapat diurungkan. Event &quot;{event.title}
+              &quot; akan dihapus secara permanen dari server.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
