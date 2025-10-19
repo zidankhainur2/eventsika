@@ -186,3 +186,26 @@ export async function getSavedEvents(): Promise<Event[]> {
     .map((item) => item.events)
     .filter((e): e is Event => Boolean(e));
 }
+
+type ApplicationWithEmail = {
+  id: string;
+  user_id: string;
+  organization_name: string;
+  contact_person: string;
+  created_at: string;
+  email: string;
+};
+
+export async function getPendingApplications(): Promise<
+  ApplicationWithEmail[]
+> {
+  const { data, error } = await supabase.rpc(
+    "get_pending_applications_with_email"
+  );
+
+  if (error) {
+    console.error("Error fetching pending applications:", error);
+    throw new Error(error.message);
+  }
+  return data || [];
+}

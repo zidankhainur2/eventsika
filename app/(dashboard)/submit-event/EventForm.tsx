@@ -1,35 +1,28 @@
 "use client";
 
-import { toast } from "sonner";
-import { useFormStatus } from "react-dom";
+import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+
+import { type Event } from "@/lib/types";
+import { type FormState } from "@/app/(types)/FormState";
+import { CATEGORIES, MAJORS } from "@/lib/constants";
+import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
-  SelectTrigger,
-  SelectValue,
   SelectContent,
   SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
-
-import { CATEGORIES, MAJORS } from "@/lib/constants";
-import { type Event } from "@/lib/types";
-import { useState } from "react";
-import { Textarea } from "@/components/ui/textarea";
-
-function SubmitButton({ text }: { text: string }) {
-  const { pending } = useFormStatus();
-  return (
-    <Button type="submit" disabled={pending}>
-      {pending ? "Memproses..." : text}
-    </Button>
-  );
-}
 
 interface EventFormProps {
   formAction: (
@@ -39,16 +32,6 @@ interface EventFormProps {
   event?: Event | null;
   buttonText: string;
 }
-
-type FormState = {
-  message: string;
-  type: "success" | "error" | null;
-};
-
-const initialState: FormState = {
-  message: "",
-  type: null,
-};
 
 export default function EventForm({
   formAction,
@@ -61,25 +44,22 @@ export default function EventForm({
     event?.image_url || null
   );
 
+  const [category, setCategory] = useState<string>(event?.category || "");
+  const [targetMajors, setTargetMajors] = useState<string[]>(
+    event?.target_majors || ["Umum"]
+  );
+
   const { mutate, isPending } = useMutation({
     mutationFn: async (formData: FormData) => {
       const result = await formAction(null, formData);
-      if (result.type === "error") {
-        throw new Error(result.message);
-      }
+      if (result.type === "error") throw new Error(result.message);
       return result;
     },
     onSuccess: (data) => {
       toast.success("Berhasil!", { description: data.message });
-
       queryClient.invalidateQueries({ queryKey: ["events"] });
       queryClient.invalidateQueries({ queryKey: ["organizer-events"] });
-
-      if (event) {
-        router.push("/organizer/dashboard");
-      } else {
-        router.push(`/event/${data.slug}`);
-      }
+      router.push(event ? "/dashboard/events" : `/event/${data.slug}`);
       router.refresh();
     },
     onError: (error) => {
@@ -87,26 +67,42 @@ export default function EventForm({
     },
   });
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+
+    formData.set("category", category);
+    formData.delete("target_majors");
+    targetMajors.forEach((major) => formData.append("target_majors", major));
+
     mutate(formData);
+  };
+
+  const handleMajorChange = (major: string, checked: boolean) => {
+    setTargetMajors((prev) => {
+      if (major === "Umum") {
+        return checked ? ["Umum"] : [];
+      }
+      const newMajors = prev.filter((m) => m !== "Umum");
+      if (checked) {
+        return [...newMajors, major];
+      } else {
+        return newMajors.filter((m) => m !== major);
+      }
+    });
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
+      reader.onloadend = () => setImagePreview(reader.result as string);
       reader.readAsDataURL(file);
     } else {
       setImagePreview(event?.image_url || null);
     }
   };
 
-  // Fungsi untuk memformat tanggal ke YYYY-MM-DDTHH:MM
   const formatDateTimeLocal = (isoString: string) => {
     const date = new Date(isoString);
     const offset = date.getTimezoneOffset();
@@ -125,11 +121,11 @@ export default function EventForm({
         />
       )}
 
-      <fieldset className="space-y-4">
-        <legend className="font-semibold text-lg text-primary mb-2">
+      <fieldset className="space-y-6">
+        <legend className="font-heading text-xl font-semibold text-text-primary">
           Informasi Dasar
         </legend>
-        <div>
+        <div className="grid w-full items-center gap-1.5">
           <Label htmlFor="title">Nama Event</Label>
           <Input
             type="text"
@@ -139,7 +135,7 @@ export default function EventForm({
             defaultValue={event?.title}
           />
         </div>
-        <div>
+        <div className="grid w-full items-center gap-1.5">
           <Label htmlFor="organizer">Penyelenggara</Label>
           <Input
             type="text"
@@ -149,7 +145,7 @@ export default function EventForm({
             defaultValue={event?.organizer}
           />
         </div>
-        <div>
+        <div className="grid w-full items-center gap-1.5">
           <Label htmlFor="image_file">Gambar Poster</Label>
           <Input
             type="file"
@@ -157,10 +153,9 @@ export default function EventForm({
             id="image_file"
             accept="image/png, image/jpeg, image/webp"
             onChange={handleImageChange}
-            className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
           />
           {imagePreview && (
-            <div className="mt-4 relative w-full h-64 rounded-lg overflow-hidden border">
+            <div className="mt-4 relative w-full aspect-video rounded-lg overflow-hidden border">
               <Image
                 src={imagePreview}
                 alt="Pratinjau Poster"
@@ -172,22 +167,19 @@ export default function EventForm({
         </div>
       </fieldset>
 
-      <fieldset className="space-y-4">
-        <legend className="font-semibold text-lg text-primary mb-2">
+      <fieldset className="space-y-6">
+        <legend className="font-heading text-xl font-semibold text-text-primary">
           Detail Acara
         </legend>
-        <div>
+        <div className="grid w-full items-center gap-1.5">
           <Label htmlFor="category">Kategori</Label>
           <Select
-            defaultValue={event?.category || ""}
-            onValueChange={(value) => {
-              const hiddenInput = document.querySelector<HTMLInputElement>(
-                "input[name='category']"
-              );
-              if (hiddenInput) hiddenInput.value = value;
-            }}
+            name="category"
+            value={category}
+            onValueChange={setCategory}
+            required
           >
-            <SelectTrigger className="w-full">
+            <SelectTrigger id="category">
               <SelectValue placeholder="Pilih kategori..." />
             </SelectTrigger>
             <SelectContent>
@@ -198,14 +190,8 @@ export default function EventForm({
               ))}
             </SelectContent>
           </Select>
-          <input
-            type="hidden"
-            name="category"
-            value={event?.category || ""}
-            readOnly
-          />
         </div>
-        <div>
+        <div className="grid w-full items-center gap-1.5">
           <Label htmlFor="location">Lokasi</Label>
           <Input
             type="text"
@@ -216,7 +202,7 @@ export default function EventForm({
             defaultValue={event?.location}
           />
         </div>
-        <div>
+        <div className="grid w-full items-center gap-1.5">
           <Label htmlFor="event_date">Tanggal & Waktu</Label>
           <Input
             type="datetime-local"
@@ -226,7 +212,7 @@ export default function EventForm({
             defaultValue={event ? formatDateTimeLocal(event.event_date) : ""}
           />
         </div>
-        <div>
+        <div className="grid w-full items-center gap-1.5">
           <Label htmlFor="description">Deskripsi</Label>
           <Textarea
             name="description"
@@ -238,47 +224,42 @@ export default function EventForm({
       </fieldset>
 
       <fieldset className="space-y-4">
-        <legend className="font-semibold text-lg text-primary mb-2">
+        <legend className="font-heading text-xl font-semibold text-text-primary">
           Target Audiens
         </legend>
-        <p className="text-sm text-gray-600 -mt-2">
-          Pilih {"Umum"} atau tentukan jurusan spesifik.
+        <p className="text-sm text-muted-foreground -mt-2">
+          Pilih "Umum" atau tentukan jurusan spesifik.
         </p>
-        <div className="space-y-2">
-          <div className="flex items-center">
-            <input
-              id="umum"
-              name="target_majors"
-              type="checkbox"
-              value="Umum"
-              defaultChecked={!event || event.target_majors?.includes("Umum")}
-              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-            />
-            <Label htmlFor="umum" className="ml-3">
-              Umum (Semua Jurusan)
-            </Label>
-          </div>
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="umum"
+            checked={targetMajors.includes("Umum")}
+            onCheckedChange={(checked) => handleMajorChange("Umum", !!checked)}
+          />
+          <Label htmlFor="umum" className="font-medium">
+            Umum (Semua Jurusan)
+          </Label>
         </div>
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-300" />
-          </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="bg-white px-2 text-gray-500">atau</span>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-60 overflow-y-auto rounded-lg border p-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 rounded-lg border p-4">
           {MAJORS.map((major) => (
-            <div key={major} className="flex items-center">
-              <input
+            <div key={major} className="flex items-center space-x-2">
+              <Checkbox
                 id={major}
-                name="target_majors"
-                type="checkbox"
-                value={major}
-                defaultChecked={event?.target_majors?.includes(major)}
-                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                checked={targetMajors.includes(major)}
+                onCheckedChange={(checked) =>
+                  handleMajorChange(major, !!checked)
+                }
+                disabled={targetMajors.includes("Umum") && major !== "Umum"}
               />
-              <Label htmlFor={major} className="ml-3">
+              <Label
+                htmlFor={major}
+                className={cn(
+                  "transition-colors",
+                  targetMajors.includes("Umum") &&
+                    major !== "Umum" &&
+                    "text-muted-foreground"
+                )}
+              >
                 {major}
               </Label>
             </div>
@@ -286,11 +267,11 @@ export default function EventForm({
         </div>
       </fieldset>
 
-      <fieldset className="space-y-4">
-        <legend className="font-semibold text-lg text-primary mb-2">
+      <fieldset className="space-y-6">
+        <legend className="font-heading text-xl font-semibold text-text-primary">
           Pendaftaran
         </legend>
-        <div>
+        <div className="grid w-full items-center gap-1.5">
           <Label htmlFor="registration_link">Link Pendaftaran</Label>
           <Input
             type="url"
@@ -304,7 +285,7 @@ export default function EventForm({
       </fieldset>
 
       <div className="pt-4">
-        <Button type="submit" disabled={isPending}>
+        <Button type="submit" disabled={isPending} className="w-full">
           {isPending ? "Memproses..." : buttonText}
         </Button>
       </div>

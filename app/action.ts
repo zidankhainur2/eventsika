@@ -228,6 +228,38 @@ export async function updateEvent(
   };
 }
 
+export async function deleteEvent(eventId: string): Promise<FormState> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { message: "Anda tidak terautentikasi.", type: "error" };
+  }
+
+  // Penting: Hapus event hanya jika organizer_id cocok dengan user.id saat ini
+  // Ini adalah lapisan keamanan untuk mencegah pengguna menghapus event milik orang lain.
+  const { error } = await supabase
+    .from("events")
+    .delete()
+    .match({ id: eventId, organizer_id: user.id });
+
+  if (error) {
+    console.error("Error deleting event:", error);
+    return {
+      message: `Gagal menghapus event: ${error.message}`,
+      type: "error",
+    };
+  }
+
+  // Revalidate path yang relevan agar data diperbarui
+  revalidatePath("/dashboard/events");
+  revalidatePath("/");
+
+  return { message: "Event berhasil dihapus.", type: "success" };
+}
+
 export async function updateUserPreferences(
   prevState: FormState,
   formData: FormData
@@ -326,11 +358,7 @@ export async function submitOrganizerApplication(
 }
 
 export async function approveOrganizerApplication(
-  applicationId: string,
-  userId: string,
-  prevState: FormState | null,
-  formData: FormData
-): Promise<FormState> {
+p0: null, p1: FormData, applicationId: string, userId: string): Promise<FormState> {
   // Ubah return type agar tidak null
   const supabase = createClient();
   try {
@@ -363,10 +391,7 @@ export async function approveOrganizerApplication(
 }
 
 export async function rejectOrganizerApplication(
-  applicationId: string,
-  prevState: FormState | null,
-  formData: FormData
-): Promise<FormState> {
+p0: null, p1: FormData, applicationId: string): Promise<FormState> {
   // Ubah return type agar tidak null
   const supabase = createClient();
   try {

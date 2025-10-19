@@ -142,3 +142,16 @@ export function useSavedEvents() {
 
   return { events, user, isLoading, error };
 }
+
+export function useAdminData() {
+  const {
+    data: applications = [],
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["admin-applications"],
+    queryFn: queries.getPendingApplications,
+  });
+
+  return { applications, isLoading, error };
+}

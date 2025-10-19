@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { updateEvent } from "@/app/action";
 import Link from "next/link";
 import { FiArrowLeft } from "react-icons/fi";
-import EventForm from "@/app/(main)/submit-event/EventForm";
+import EventForm from "@/app/(dashboard)/submit-event/EventForm";
 
 type EditEventPageProps = {
   params: { slug: string };

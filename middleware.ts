@@ -38,14 +38,12 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
   const { pathname } = request.nextUrl;
 
-  const protectedRoutes = ["/profile", "/submit-event", "/admin"];
+  const protectedRoutes = ["/profile", "/submit-event", "/admin", "/dashboard"];
 
-  // Arahkan jika belum login
   if (!user && protectedRoutes.some((route) => pathname.startsWith(route))) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // PENINGKATAN KEAMANAN: Cek peran untuk rute spesifik
   if (user) {
     const { data: profile } = await supabase
       .from("profiles")
@@ -53,17 +51,24 @@ export async function middleware(request: NextRequest) {
       .eq("id", user.id)
       .single();
 
-    // Hanya super_admin yang bisa akses /admin
-    if (pathname.startsWith("/admin") && profile?.role !== "super_admin") {
+    const isAdminOrOrganizer =
+      profile?.role === "super_admin" || profile?.role === "organizer";
+
+    if (isAdminOrOrganizer && pathname === "/") {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
+
+    if (
+      !isAdminOrOrganizer &&
+      (pathname.startsWith("/dashboard") || pathname.startsWith("/admin"))
+    ) {
       return NextResponse.redirect(new URL("/", request.url));
     }
 
-    // Hanya organizer atau super_admin yang bisa akses /submit-event
-    if (
-      pathname.startsWith("/submit-event") &&
-      profile?.role !== "organizer" &&
-      profile?.role !== "super_admin"
-    ) {
+    if (pathname.startsWith("/admin") && profile?.role !== "super_admin") {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
+    if (pathname.startsWith("/submit-event") && !isAdminOrOrganizer) {
       return NextResponse.redirect(new URL("/", request.url));
     }
   }
