@@ -20,51 +20,65 @@ export default async function Navbar() {
     : { data: null };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur-sm">
-      <nav className="max-w-6xl mx-auto flex justify-between items-center h-16 px-4 gap-4">
-        {/* Mobile Menu & Logo */}
-        <div className="flex items-center gap-2">
+    <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur-sm md:border-b md:border-border">
+      {/* Navigasi Utama */}
+      <nav className="relative max-w-6xl mx-auto flex h-16 items-center justify-between gap-4 px-4">
+        {/* Kiri: Hamburger (Mobile) / Logo (Desktop) */}
+        <div className="flex flex-1 items-center gap-2 md:flex-none">
           <div className="md:hidden">
             <MobileMenuContainer
               user={user}
               profile={profile as Profile | null}
             />
           </div>
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/" className="hidden items-center gap-2 md:flex">
             <Image
               src="/eventsika-logo.png"
               alt="EventSika Logo"
               width={32}
               height={32}
-              className="w-8 h-8"
+              className="h-8 w-8"
             />
-            <span className="font-heading text-xl font-bold text-primary hidden sm:block">
+            <span className="hidden font-heading text-xl font-bold text-primary sm:block">
               EventSika
             </span>
           </Link>
         </div>
 
-        {/* Search Bar - Center */}
-        <div className="flex-1 flex justify-center px-4">
+        {/* Tengah: Logo (Mobile) / Search (Desktop) */}
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 md:hidden">
+          <Link href="/" className="flex items-center gap-2">
+            <Image
+              src="/eventsika-logo.png"
+              alt="EventSika Logo"
+              width={28}
+              height={28}
+              className="h-7 w-7"
+            />
+          </Link>
+        </div>
+        <div className="hidden flex-1 justify-center px-4 md:flex">
           <div className="w-full max-w-md">
             <Searchbar />
           </div>
         </div>
 
-        {/* Actions & User Menu */}
-        <div className="flex items-center gap-2">
+        {/* Kanan: Aksi Pengguna */}
+        <div className="flex flex-1 items-center justify-end gap-1 md:gap-2">
           {user ? (
             <>
-              <Button variant="ghost" size="icon" asChild>
-                <Link href="/profile/saved-events">
-                  <FiHeart className="h-5 w-5" />
-                  <span className="sr-only">Event Tersimpan</span>
-                </Link>
-              </Button>
-              <Button variant="ghost" size="icon" disabled>
-                <FiCalendar className="h-5 w-5" />
-                <span className="sr-only">Kalender Event</span>
-              </Button>
+              <div className="hidden items-center md:flex">
+                <Button variant="ghost" size="icon" asChild>
+                  <Link href="/profile/saved-events">
+                    <FiHeart className="h-5 w-5" />
+                    <span className="sr-only">Event Tersimpan</span>
+                  </Link>
+                </Button>
+                <Button variant="ghost" size="icon" disabled>
+                  <FiCalendar className="h-5 w-5" />
+                  <span className="sr-only">Kalender Event</span>
+                </Button>
+              </div>
               <UserMenu user={user} profile={profile as Profile | null} />
             </>
           ) : (
@@ -74,6 +88,11 @@ export default async function Navbar() {
           )}
         </div>
       </nav>
+
+      {/* Search Bar untuk Mobile */}
+      <div className="border-b border-border bg-background px-4 pb-3 md:hidden">
+        <Searchbar />
+      </div>
     </header>
   );
 }

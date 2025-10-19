@@ -1,18 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import {
   FiMenu,
   FiLogIn,
   FiBookOpen,
-  FiTool,
-  FiAward,
-  FiMonitor,
-  FiMusic,
-  FiActivity,
   FiHeart,
+  FiCalendar,
   FiLogOut,
+  FiInfo,
 } from "react-icons/fi";
 import {
   Sheet,
@@ -27,35 +23,6 @@ import { signOut } from "@/app/action";
 import { CATEGORIES } from "@/lib/constants";
 import { type Profile } from "@/lib/types";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-
-const categoryConfig = {
-  Seminar: {
-    icon: FiBookOpen,
-    color: "bg-blue-100",
-    iconColor: "text-blue-600",
-  },
-  Workshop: {
-    icon: FiTool,
-    color: "bg-green-100",
-    iconColor: "text-green-600",
-  },
-  Kompetisi: {
-    icon: FiAward,
-    color: "bg-yellow-100",
-    iconColor: "text-yellow-600",
-  },
-  Webinar: {
-    icon: FiMonitor,
-    color: "bg-purple-100",
-    iconColor: "text-purple-600",
-  },
-  Konser: { icon: FiMusic, color: "bg-pink-100", iconColor: "text-pink-600" },
-  Olahraga: {
-    icon: FiActivity,
-    color: "bg-red-100",
-    iconColor: "text-red-600",
-  },
-};
 
 export default function MobileMenu({
   user,
@@ -86,7 +53,7 @@ export default function MobileMenu({
           <div className="px-6">
             <Link
               href="/profile"
-              className="flex items-center gap-3 rounded-full p-3 -mx-3 hover:bg-muted"
+              className="flex items-center gap-3 rounded-lg p-3 -mx-3 hover:bg-muted"
             >
               <Avatar className="h-12 w-12">
                 <AvatarImage src={avatarUrl} alt="Avatar" />
@@ -102,9 +69,33 @@ export default function MobileMenu({
           </div>
         )}
 
-        <Separator className="my-4" />
+        <div className="flex-1 overflow-y-auto px-6 space-y-6 mt-4">
+          {/* Menu Saya (Hanya untuk user login) */}
+          {user && (
+            <div>
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                Menu Saya
+              </h3>
+              <div className="flex flex-col gap-1">
+                <Link
+                  href="/profile/saved-events"
+                  className="flex items-center gap-3 p-2 rounded-md text-foreground hover:bg-muted"
+                >
+                  <FiHeart className="h-4 w-4" />
+                  <span>Event Tersimpan</span>
+                </Link>
+                <div
+                  className="flex items-center gap-3 p-2 rounded-md text-muted-foreground cursor-not-allowed"
+                  aria-disabled="true"
+                >
+                  <FiCalendar className="h-4 w-4" />
+                  <span>Kalender</span>
+                </div>
+              </div>
+            </div>
+          )}
 
-        <div className="flex-1 overflow-y-auto px-6 space-y-6">
+          {/* Kategori */}
           <div>
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">
               Kategori
@@ -114,13 +105,16 @@ export default function MobileMenu({
                 <Link
                   key={cat}
                   href={`/?category=${cat}`}
-                  className="flex items-center gap-3 p-2 rounded-md text-text-secondary hover:bg-muted hover:text-text-primary"
+                  className="flex items-center gap-3 p-2 rounded-md text-foreground hover:bg-muted"
                 >
+                  <FiBookOpen className="h-4 w-4" />
                   <span>{cat}</span>
                 </Link>
               ))}
             </div>
           </div>
+
+          {/* Informasi */}
           <div>
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">
               Informasi
@@ -128,9 +122,9 @@ export default function MobileMenu({
             <div className="flex flex-col gap-1">
               <Link
                 href="/about"
-                className="flex items-center gap-3 p-2 rounded-md text-text-secondary hover:bg-muted hover:text-text-primary"
+                className="flex items-center gap-3 p-2 rounded-md text-foreground hover:bg-muted"
               >
-                <FiHeart className="h-4 w-4" />
+                <FiInfo className="h-4 w-4" />
                 <span>Tentang Kami</span>
               </Link>
             </div>

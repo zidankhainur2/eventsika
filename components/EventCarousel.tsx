@@ -23,27 +23,26 @@ export default function EventCarousel({
     return null;
   }
 
-  const mobileLimit = 4;
-  const desktopLimit = 5;
-
   return (
-    <section className="mb-12">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-bold text-primary">{title}</h2>
-        {viewAllLink && events.length > desktopLimit && (
+    <section className="mb-10">
+      <div className="flex justify-between items-baseline mb-4">
+        <h2 className="text-xl sm:text-2xl font-bold font-heading text-primary">
+          {title}
+        </h2>
+        {viewAllLink && (
           <Link
             href={viewAllLink}
-            className="hidden sm:inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline"
+            className="text-sm font-semibold text-primary/80 hover:underline"
           >
-            Lihat Semua <FiArrowRight />
+            Lihat Semua
           </Link>
         )}
       </div>
 
-      {/* Mobile Version */}
-      <div className="block sm:hidden">
-        <div className="grid grid-cols-1 xs:grid-cols-2 gap-4 mb-6">
-          {events.slice(0, mobileLimit).map((event) => (
+      {/* Versi Mobile: Horizontal Scroll */}
+      <div className="sm:hidden">
+        <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          {events.map((event) => (
             <EventCard
               key={event.id}
               event={event}
@@ -52,31 +51,18 @@ export default function EventCarousel({
             />
           ))}
         </div>
-
-        {viewAllLink && events.length > mobileLimit && (
-          <div className="text-center">
-            <Link
-              href={viewAllLink}
-              className="bg-accent text-on-accent px-6 py-3 rounded-lg font-semibold hover:bg-yellow-500 transition-all duration-200 inline-block"
-            >
-              Lihat Semua Event
-            </Link>
-          </div>
-        )}
       </div>
 
-      {/* Desktop Version */}
-      <div className="hidden sm:block">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {events.slice(0, desktopLimit).map((event) => (
-            <EventCard
-              key={event.id}
-              event={event}
-              isSaved={savedEventIds.has(event.id)}
-              user={user}
-            />
-          ))}
-        </div>
+      {/* Versi Desktop: Grid */}
+      <div className="hidden sm:grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        {events.slice(0, 5).map((event) => (
+          <EventCard
+            key={event.id}
+            event={event}
+            isSaved={savedEventIds.has(event.id)}
+            user={user}
+          />
+        ))}
       </div>
     </section>
   );
