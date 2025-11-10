@@ -2,6 +2,7 @@ import { createClient } from "@/utils/supabase/client";
 import { type Event } from "./types";
 import { type User } from "@supabase/supabase-js";
 import { type Profile } from "./types";
+import { getVectorRecommendations } from "@/app/action";
 
 const supabase = createClient();
 
@@ -35,20 +36,7 @@ export const getAllUpcomingEvents = async ({
 };
 
 export const getRecommendedEvents = async (): Promise<Event[]> => {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return [];
-
-  const { data, error } = await supabase.rpc("get_scored_recommended_events", {
-    p_user_id: user.id,
-  });
-
-  if (error) {
-    console.error("Error fetching scored recommended events:", error);
-    throw new Error(error.message);
-  }
-  return data || [];
+  return getVectorRecommendations();
 };
 
 export const getMajorRelatedEvents = async (): Promise<Event[]> => {
@@ -205,6 +193,19 @@ export async function getPendingApplications(): Promise<
 
   if (error) {
     console.error("Error fetching pending applications:", error);
+    throw new Error(error.message);
+  }
+  return data || [];
+}
+
+export async function getAllProfiles(): Promise<Profile[]> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, full_name, avatar_url, major, interests, role")
+    .order("full_name", { ascending: true });
+
+  if (error) {
+    console.error("Error fetching profiles:", error);
     throw new Error(error.message);
   }
   return data || [];

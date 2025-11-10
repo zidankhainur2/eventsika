@@ -14,7 +14,7 @@ export default function OrganizerDashboard() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-heading font-bold">Ringkasan</h1>
+        <h1 className="text-3xl font-heading font-bold">Dashboard</h1>
         <p className="text-muted-foreground">
           Selamat datang kembali! Berikut adalah ringkasan singkat event Anda.
         </p>

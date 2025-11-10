@@ -1,5 +1,3 @@
-// lib/types.ts
-
 export type Event = {
   id: string;
   created_at: string;
@@ -15,6 +13,7 @@ export type Event = {
   target_majors: string[] | null;
   slug: string;
   tags: string[] | null;
+  embedding: any;
 };
 
 export type Profile = {
@@ -24,4 +23,20 @@ export type Profile = {
   major: string | null;
   interests: string | null;
   role: "user" | "organizer" | "super_admin";
+  email?: string;
+};
+
+export type TestResultItem = {
+  id: string;
+  title: string;
+  tags: string[] | null;
+  target_majors: string[] | null;
+  vector_score: number;
+  major_score: number;
+  total_score: number;
+};
+
+export type RecommendationTestResult = {
+  profile: Profile | null;
+  recommendations: TestResultItem[];
 };

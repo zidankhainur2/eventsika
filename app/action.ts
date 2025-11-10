@@ -5,6 +5,16 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { FormState } from "./(types)/FormState";
 import { headers } from "next/headers";
+import { generateEmbedding } from "@/lib/embedding";
+import { RecommendationTestResult, type Event } from "@/lib/types";
+
+function getEventContent(formData: FormData): string {
+  const title = formData.get("title") as string;
+  const description = formData.get("description") as string;
+  const tags = formData.getAll("tags") as string[];
+
+  return `Judul: ${title}; Deskripsi: ${description}; Tags: ${tags.join(", ")}`;
+}
 
 async function verifySuperAdmin(supabase: ReturnType<typeof createClient>) {
   const {
@@ -32,12 +42,10 @@ function slugify(text: string): string {
 }
 
 function processTags(formData: FormData): string[] | null {
-  const tagsInput = formData.get("tags") as string;
-  if (!tagsInput) return null;
-  return tagsInput
-    .split(",")
-    .map((tag) => tag.trim())
-    .filter((tag) => tag.length > 0);
+  const tags = formData.getAll("tags") as string[];
+  if (!tags || tags.length === 0) return null;
+
+  return tags.map((tag) => tag.trim()).filter((tag) => tag.length > 0);
 }
 
 export async function addEvent(
@@ -88,6 +96,9 @@ export async function addEvent(
     return { message: "Gagal mengunggah gambar.", type: "error" };
   }
 
+  const eventContent = getEventContent(formData);
+  const embedding = await generateEmbedding(eventContent);
+
   // Dapatkan URL publik dari gambar yang baru diunggah
   const {
     data: { publicUrl },
@@ -109,6 +120,7 @@ export async function addEvent(
     organizer_id: user.id,
     target_majors: targetMajors,
     tags: processTags(formData),
+    embedding: embedding,
   };
 
   if (!eventData.title || !eventData.organizer || !eventData.event_date) {
@@ -120,12 +132,7 @@ export async function addEvent(
 
   const { data, error } = await supabase
     .from("events")
-    .insert([
-      {
-        ...eventData,
-        organizer_id: user.id,
-      },
-    ])
+    .insert([eventData])
     .select("slug")
     .single();
 
@@ -199,6 +206,9 @@ export async function updateEvent(
     imageUrl = publicUrl;
   }
 
+  const eventContent = getEventContent(formData);
+  const embedding = await generateEmbedding(eventContent);
+
   const title = formData.get("title") as string;
   const slug = slugify(title);
 
@@ -214,6 +224,7 @@ export async function updateEvent(
     image_url: imageUrl,
     target_majors: targetMajors,
     tags: processTags(formData),
+    embedding: embedding,
   };
 
   const { error } = await supabase
@@ -752,4 +763,114 @@ export async function signOut() {
   const supabase = createClient();
   await supabase.auth.signOut();
   return redirect("/login");
+}
+
+export async function getVectorRecommendations(): Promise<Event[]> {
+  try {
+    const supabase = createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      console.error("Error getting user:", authError);
+      return [];
+    }
+
+    // 1. Dapatkan profil pengguna untuk minat mereka
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("interests, major")
+      .eq("id", user.id)
+      .single();
+
+    if (profileError) {
+      console.error("Error fetching profile:", profileError);
+      return [];
+    }
+
+    if (!profile?.interests || profile.interests.trim() === "") {
+      console.log("User has no interests set");
+      return [];
+    }
+
+    // 2. Hasilkan embedding dari minat pengguna
+    const interestVector = await generateEmbedding(profile.interests);
+
+    if (!interestVector) {
+      console.error("Failed to generate embedding vector");
+      return [];
+    }
+
+    // 3. Panggil RPC dengan vektor minat
+    const { data, error } = await supabase.rpc("get_hybrid_recommendations", {
+      query_embedding: interestVector,
+      p_user_id: user.id,
+      p_user_major: profile.major,
+    });
+
+    if (error) {
+      console.error("Error matching events:", error);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error("Error lengkap di getVectorRecommendations:", error);
+    throw new Error(`Gagal mengambil rekomendasi: ${(error as Error).message}`);
+  }
+}
+
+/**
+ * Menjalankan tes rekomendasi untuk satu pengguna spesifik.
+ * @param userId ID pengguna yang akan diuji
+ * @returns Profil pengguna dan daftar rekomendasi beserta skornya
+ */
+export async function runRecommendationTest(
+  userId: string
+): Promise<RecommendationTestResult> {
+  const supabase = createClient();
+
+  // 1. Ambil profil lengkap pengguna yang dipilih
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", userId)
+    .single();
+
+  if (!profile) {
+    throw new Error("Profil pengguna tidak ditemukan.");
+  }
+
+  if (!profile.interests || !profile.major) {
+    return { profile, recommendations: [] };
+  }
+
+  let interestVector;
+  try {
+    interestVector = await generateEmbedding(profile.interests);
+  } catch (error) {
+    throw new Error(`Gagal membuat vektor minat: ${(error as Error).message}`);
+  }
+
+  if (!interestVector) {
+    return { profile, recommendations: [] };
+  }
+  const { data: recommendations, error: rpcError } = await supabase.rpc(
+    "test_match_events",
+    {
+      p_user_major: profile.major,
+      query_embedding: interestVector,
+    }
+  );
+
+  if (rpcError) {
+    throw new Error(
+      `Gagal menjalankan RPC 'test_match_events': ${rpcError.message}`
+    );
+  }
+
+  // 4. Kembalikan data lengkap untuk ditampilkan di UI
+  return { profile, recommendations: recommendations || [] };
 }

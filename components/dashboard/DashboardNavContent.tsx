@@ -9,6 +9,7 @@ import {
   FiBarChart2,
   FiUsers,
   FiLogOut,
+  FiCpu,
 } from "react-icons/fi";
 import { cn } from "@/lib/utils";
 import { useProfile } from "@/lib/hooks/useEvents";
@@ -17,7 +18,7 @@ import { Separator } from "@/components/ui/separator";
 import { signOut } from "@/app/action";
 
 const navLinks = [
-  { href: "/dashboard", label: "Ringkasan", icon: FiHome },
+  { href: "/dashboard", label: "Dashboard", icon: FiHome },
   { href: "/dashboard/events", label: "Kelola Event", icon: FiCalendar },
   {
     href: "/dashboard/analytics",
@@ -29,6 +30,11 @@ const navLinks = [
 
 const adminLinks = [
   { href: "/admin", label: "Aplikasi Organizer", icon: FiUsers },
+  {
+    href: "/dashboard/recommendation-test",
+    label: "Uji Algoritma",
+    icon: FiCpu,
+  },
 ];
 
 export function DashboardNavContent() {

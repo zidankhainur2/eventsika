@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -23,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { FiX } from "react-icons/fi";
 
 interface EventFormProps {
   formAction: (
@@ -49,6 +51,9 @@ export default function EventForm({
     event?.target_majors || ["Umum"]
   );
 
+  const [tagInput, setTagInput] = useState<string>("");
+  const [tags, setTags] = useState<string[]>(event?.tags || []);
+
   const { mutate, isPending } = useMutation({
     mutationFn: async (formData: FormData) => {
       const result = await formAction(null, formData);
@@ -74,8 +79,29 @@ export default function EventForm({
     formData.set("category", category);
     formData.delete("target_majors");
     targetMajors.forEach((major) => formData.append("target_majors", major));
+    formData.delete("tags");
+    tags.forEach((tag) => formData.append("tags", tag));
 
     mutate(formData);
+  };
+
+  const handleTagInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      const newTags = tagInput
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter((tag) => tag.length > 0 && !tags.includes(tag));
+
+      if (newTags.length > 0) {
+        setTags([...tags, ...newTags]);
+      }
+      setTagInput("");
+    }
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    setTags(tags.filter((tag) => tag !== tagToRemove));
   };
 
   const handleMajorChange = (major: string, checked: boolean) => {
@@ -223,22 +249,42 @@ export default function EventForm({
         </div>
       </fieldset>
 
-      <fieldset className="space-y-6">
+      <fieldset className="space-y-4">
         <legend className="font-heading text-xl font-semibold text-text-primary">
           Tags & Topik
         </legend>
         <div className="grid w-full items-center gap-1.5">
-          <Label htmlFor="tags">Topik Spesifik (pisahkan dengan koma)</Label>
+          <Label htmlFor="tags-input">
+            Topik Spesifik (tekan Enter/koma untuk menambah)
+          </Label>
           <Input
-            id="tags"
-            name="tags"
-            placeholder="Contoh: UI/UX, Desain Grafis, Figma"
-            defaultValue={event?.tags?.join(", ")}
+            id="tags-input"
+            placeholder="Contoh: UI/UX, Programming, Startup"
+            value={tagInput}
+            onChange={(e) => setTagInput(e.target.value)}
+            onKeyDown={handleTagInputKeyDown}
           />
           <p className="text-sm text-muted-foreground">
             Ini akan sangat membantu dalam merekomendasikan eventmu kepada
             audiens yang tepat.
           </p>
+        </div>
+        <div
+          className={cn("flex flex-wrap gap-2", tags.length === 0 && "hidden")}
+        >
+          {tags.map((tag) => (
+            <Badge key={tag} variant="secondary" className="text-sm py-1 px-3">
+              {tag}
+              <button
+                type="button"
+                className="ml-2 rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                onClick={() => removeTag(tag)}
+                aria-label={`Hapus tag ${tag}`}
+              >
+                <FiX className="h-4 w-4" />
+              </button>
+            </Badge>
+          ))}
         </div>
       </fieldset>
 
