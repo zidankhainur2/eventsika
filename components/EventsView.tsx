@@ -77,7 +77,7 @@ export default function EventsView() {
             message="Saat ini belum ada event yang dijadwalkan. Cek kembali nanti!"
           >
             <Button asChild size="lg" className="mt-8 font-semibold">
-              <Link href="/submit-event"></Link> Submit Event
+              <Link href="/submit-event">Submit Event</Link>
             </Button>
           </EmptyState>
         )}

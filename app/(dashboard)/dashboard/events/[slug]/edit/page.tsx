@@ -12,10 +12,11 @@ import EventForm from "@/app/(dashboard)/submit-event/EventForm";
 import { updateEvent } from "@/app/action";
 
 type EditEventPageProps = {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 };
 
 export default async function EditEventPage({ params }: EditEventPageProps) {
+  const { slug } = await params;
   const supabase = createClient();
   const {
     data: { user },
@@ -25,7 +26,7 @@ export default async function EditEventPage({ params }: EditEventPageProps) {
     redirect("/login");
   }
 
-  const event = await getEventBySlug(params.slug);
+  const event = await getEventBySlug(slug);
 
   if (event.organizer_id !== user.id) {
     redirect("/dashboard");
