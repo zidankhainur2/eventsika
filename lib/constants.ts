@@ -1,11 +1,4 @@
-export const CATEGORIES = [
-  "Seminar",
-  "Workshop",
-  "Kompetisi",
-  "Webinar",
-  "Konser",
-  "Olahraga",
-];
+export const CATEGORIES = ["Seminar", "Workshop", "Kompetisi", "Hiburan"];
 
 export const INTEREST_OPTIONS = [
   { label: "Teknologi", emoji: "💻" },

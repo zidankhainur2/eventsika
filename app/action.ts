@@ -50,7 +50,7 @@ function processTags(formData: FormData): string[] | null {
 
 export async function addEvent(
   prevState: FormState,
-  formData: FormData
+  formData: FormData,
 ): Promise<FormState & { slug?: string }> {
   const supabase = createClient();
   const {
@@ -154,7 +154,7 @@ export async function addEvent(
 
 export async function updateEvent(
   prevState: FormState,
-  formData: FormData
+  formData: FormData,
 ): Promise<FormState & { slug?: string }> {
   const supabase = createClient();
   const {
@@ -260,31 +260,41 @@ export async function deleteEvent(eventId: string): Promise<FormState> {
     return { message: "Anda tidak terautentikasi.", type: "error" };
   }
 
-  // Penting: Hapus event hanya jika organizer_id cocok dengan user.id saat ini
-  // Ini adalah lapisan keamanan untuk mencegah pengguna menghapus event milik orang lain.
+  const { data: eventData } = await supabase
+    .from("events")
+    .select("image_url")
+    .match({ id: eventId, organizer_id: user.id })
+    .single();
+
   const { error } = await supabase
     .from("events")
     .delete()
     .match({ id: eventId, organizer_id: user.id });
 
   if (error) {
-    console.error("Error deleting event:", error);
     return {
       message: `Gagal menghapus event: ${error.message}`,
       type: "error",
     };
   }
 
-  // Revalidate path yang relevan agar data diperbarui
+  if (eventData?.image_url) {
+    const filePath = eventData.image_url
+      .split("/")
+      .slice(-2)
+      .join("/")
+      .split("?")[0];
+    await supabase.storage.from("event-posters").remove([filePath]);
+  }
+
   revalidatePath("/dashboard/events");
   revalidatePath("/");
-
   return { message: "Event berhasil dihapus.", type: "success" };
 }
 
 export async function updateUserPreferences(
   prevState: FormState,
-  formData: FormData
+  formData: FormData,
 ): Promise<FormState> {
   const supabase = createClient();
   const {
@@ -318,7 +328,7 @@ export async function updateUserPreferences(
 
 export async function submitOrganizerApplication(
   prevState: FormState,
-  formData: FormData
+  formData: FormData,
 ): Promise<FormState> {
   const supabase = createClient();
   const {
@@ -383,7 +393,7 @@ export async function approveOrganizerApplication(
   p0: null,
   p1: FormData,
   applicationId: string,
-  userId: string
+  userId: string,
 ): Promise<FormState> {
   // Ubah return type agar tidak null
   const supabase = createClient();
@@ -419,7 +429,7 @@ export async function approveOrganizerApplication(
 export async function rejectOrganizerApplication(
   p0: null,
   p1: FormData,
-  applicationId: string
+  applicationId: string,
 ): Promise<FormState> {
   // Ubah return type agar tidak null
   const supabase = createClient();
@@ -522,7 +532,7 @@ export async function saveUserInterests(formData: FormData) {
 
 export async function updateProfile(
   prevState: FormState,
-  formData: FormData
+  formData: FormData,
 ): Promise<FormState> {
   try {
     const supabase = createClient();
@@ -765,7 +775,10 @@ export async function signOut() {
   return redirect("/login");
 }
 
-export async function getVectorRecommendations(): Promise<Event[]> {
+export async function getVectorRecommendations(
+  search?: string,
+  category?: string,
+): Promise<Event[]> {
   try {
     const supabase = createClient();
     const {
@@ -778,20 +791,18 @@ export async function getVectorRecommendations(): Promise<Event[]> {
       return [];
     }
 
-    // 1. Dapatkan profil pengguna untuk minat mereka
+    // 1. Dapatkan profil pengguna
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("interests, major")
       .eq("id", user.id)
       .single();
 
-    if (profileError) {
-      console.error("Error fetching profile:", profileError);
-      return [];
-    }
-
-    if (!profile?.interests || profile.interests.trim() === "") {
-      console.log("User has no interests set");
+    if (
+      profileError ||
+      !profile?.interests ||
+      profile.interests.trim() === ""
+    ) {
       return [];
     }
 
@@ -799,16 +810,32 @@ export async function getVectorRecommendations(): Promise<Event[]> {
     const interestVector = await generateEmbedding(profile.interests);
 
     if (!interestVector) {
-      console.error("Failed to generate embedding vector");
       return [];
     }
 
     // 3. Panggil RPC dengan vektor minat
-    const { data, error } = await supabase.rpc("get_hybrid_recommendations", {
+    let query = supabase.rpc("get_hybrid_recommendations", {
       query_embedding: interestVector,
       p_user_id: user.id,
       p_user_major: profile.major,
     });
+
+    // 4. Terapkan Keyword Matching (Search)
+    if (search) {
+      const searchTerm = `%${search}%`;
+      query = query.or(
+        `title.ilike.${searchTerm},organizer.ilike.${searchTerm},description.ilike.${searchTerm}`,
+      );
+    }
+
+    // 5. Terapkan Category Matching
+    if (category) {
+      const categories = category.split(",");
+      query = query.in("category", categories);
+    }
+
+    // Eksekusi query final
+    const { data, error } = await query;
 
     if (error) {
       console.error("Error matching events:", error);
@@ -828,7 +855,9 @@ export async function getVectorRecommendations(): Promise<Event[]> {
  * @returns Profil pengguna dan daftar rekomendasi beserta skornya
  */
 export async function runRecommendationTest(
-  userId: string
+  userId: string,
+  weightSemantic: number = 0.5,
+  weightRule: number = 0.5,
 ): Promise<RecommendationTestResult> {
   const supabase = createClient();
 
@@ -862,12 +891,14 @@ export async function runRecommendationTest(
     {
       p_user_major: profile.major,
       query_embedding: interestVector,
-    }
+      p_weight_semantic: weightSemantic,
+      p_weight_rule: weightRule,
+    },
   );
 
   if (rpcError) {
     throw new Error(
-      `Gagal menjalankan RPC 'test_match_events': ${rpcError.message}`
+      `Gagal menjalankan RPC 'test_match_events': ${rpcError.message}`,
     );
   }
 

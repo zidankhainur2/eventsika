@@ -5,7 +5,7 @@ import { type User } from "@supabase/supabase-js";
 
 async function getCurrentUserProfile(
   supabase: ReturnType<typeof createClient>,
-  user: User
+  user: User,
 ) {
   const { data: profile } = await supabase
     .from("profiles")
@@ -15,32 +15,15 @@ async function getCurrentUserProfile(
   return profile;
 }
 
-export async function getRecommendedEvents(
-  supabase: ReturnType<typeof createClient>,
-  user: User | null
-): Promise<Event[]> {
-  if (!user) return [];
-
-  const { data, error } = await supabase.rpc("get_scored_recommended_events", {
-    p_user_id: user.id,
-  });
-
-  if (error) {
-    console.error("Error fetching recommended events:", error);
-    return [];
-  }
-  return data ?? [];
-}
-
 export async function getMajorRelatedEvents(
   supabase: ReturnType<typeof createClient>,
-  user: User | null
+  user: User | null,
 ): Promise<Event[]> {
   if (!user) return [];
 
   const { data, error } = await supabase.rpc(
     "get_major_related_events_for_user",
-    { p_user_id: user.id }
+    { p_user_id: user.id },
   );
 
   if (error) {
@@ -60,7 +43,7 @@ export async function getAllUpcomingEvents(
     search?: string;
     category?: string;
     limit?: number;
-  }
+  },
 ): Promise<Event[]> {
   let query = supabase
     .from("events")
@@ -71,7 +54,7 @@ export async function getAllUpcomingEvents(
   if (search) {
     const searchTerm = `%${search}%`;
     query = query.or(
-      `title.ilike.${searchTerm},organizer.ilike.${searchTerm},description.ilike.${searchTerm}`
+      `title.ilike.${searchTerm},organizer.ilike.${searchTerm},description.ilike.${searchTerm}`,
     );
   }
 
@@ -113,7 +96,7 @@ type SavedEventRow = {
 
 export async function getSavedEvents(
   supabase: ReturnType<typeof createClient>,
-  user: User | null
+  user: User | null,
 ): Promise<Event[]> {
   if (!user) return [];
 
@@ -136,7 +119,7 @@ export async function getSavedEvents(
 
 export async function getSavedEventIds(
   supabase: ReturnType<typeof createClient>,
-  user: User | null
+  user: User | null,
 ): Promise<Set<string>> {
   if (!user) return new Set();
 
@@ -156,7 +139,7 @@ export async function getSavedEventIds(
 
 export async function getEventsByOrganizer(
   supabase: ReturnType<typeof createClient>,
-  organizerId: string
+  organizerId: string,
 ): Promise<Event[]> {
   const { data, error } = await supabase
     .from("events")

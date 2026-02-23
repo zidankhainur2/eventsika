@@ -24,8 +24,8 @@ export function useEvents(search: string, category: string) {
     isLoading: isRecommendedLoading,
     error: recommendedError,
   } = useQuery({
-    queryKey: ["events", "recommended"],
-    queryFn: queries.getRecommendedEvents,
+    queryKey: ["events", "recommended", { search, category }],
+    queryFn: () => queries.getRecommendedEvents({ search, category }),
     enabled: !!user,
   });
 

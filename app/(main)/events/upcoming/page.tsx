@@ -7,14 +7,14 @@ import { createClient } from "@/utils/supabase/server";
 export default async function UpcomingEventsPage({
   searchParams,
 }: {
-  searchParams?: {
-    search?: string;
-    category?: string;
-  };
+  searchParams: Promise<{ search?: string; category?: string }>;
 }) {
   const supabase = createClient();
-  const search = searchParams?.search || "";
-  const category = searchParams?.category || "";
+
+  const resolvedSearchParams = await searchParams;
+  const search = resolvedSearchParams?.search || "";
+  const category = resolvedSearchParams?.category || "";
+
   const events = await getAllUpcomingEvents(supabase, { search, category });
 
   return (

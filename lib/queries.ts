@@ -21,7 +21,7 @@ export const getAllUpcomingEvents = async ({
 
   if (search) {
     query = query.or(
-      `title.ilike.%${search}%,organizer.ilike.%${search}%,description.ilike.%${search}%`
+      `title.ilike.%${search}%,organizer.ilike.%${search}%,description.ilike.%${search}%`,
     );
   }
 
@@ -35,8 +35,15 @@ export const getAllUpcomingEvents = async ({
   return data || [];
 };
 
-export const getRecommendedEvents = async (): Promise<Event[]> => {
-  return getVectorRecommendations();
+export const getRecommendedEvents = async ({
+  search,
+  category,
+}: {
+  search?: string;
+  category?: string;
+} = {}): Promise<Event[]> => {
+  // Teruskan parameter pencarian ke server action
+  return getVectorRecommendations(search, category);
 };
 
 export const getMajorRelatedEvents = async (): Promise<Event[]> => {
@@ -47,7 +54,7 @@ export const getMajorRelatedEvents = async (): Promise<Event[]> => {
 
   const { data, error } = await supabase.rpc(
     "get_major_related_events_for_user",
-    { p_user_id: user.id }
+    { p_user_id: user.id },
   );
   if (error) throw new Error(error.message);
   return data || [];
@@ -130,7 +137,7 @@ export async function getProfile(): Promise<Profile | null> {
 
 export const getRelatedEvents = async (
   category: string,
-  currentEventId: string
+  currentEventId: string,
 ): Promise<Event[]> => {
   if (!category || !currentEventId) return [];
 
@@ -188,7 +195,7 @@ export async function getPendingApplications(): Promise<
   ApplicationWithEmail[]
 > {
   const { data, error } = await supabase.rpc(
-    "get_pending_applications_with_email"
+    "get_pending_applications_with_email",
   );
 
   if (error) {

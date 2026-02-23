@@ -29,6 +29,7 @@ export type Profile = {
 export type TestResultItem = {
   id: string;
   title: string;
+  category: string;
   tags: string[] | null;
   target_majors: string[] | null;
   vector_score: number;
