@@ -19,10 +19,16 @@ import {
 } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User } from "lucide-react";
+// Import komponen InterestSelector
+import { InterestSelector } from "@/components/InterestSelector";
 
 function SubmitButton({ isPending }: { isPending: boolean }) {
   return (
-    <Button type="submit" disabled={isPending} className="w-full sm:w-auto">
+    <Button
+      type="submit"
+      disabled={isPending}
+      className="w-full sm:w-auto px-8"
+    >
       {isPending ? "Menyimpan..." : "Simpan Perubahan"}
     </Button>
   );
@@ -31,17 +37,27 @@ function SubmitButton({ isPending }: { isPending: boolean }) {
 export default function ProfileForm({ profile }: { profile: Profile | null }) {
   const queryClient = useQueryClient();
   const [imagePreview, setImagePreview] = useState<string | null>(
-    profile?.avatar_url || null
+    profile?.avatar_url || null,
   );
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [major, setMajor] = useState<string>(profile?.major || "");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // State untuk menyimpan minat dalam bentuk array
+  // Mengonversi string "A, B" dari database menjadi array ["A", "B"]
+  const [interests, setInterests] = useState<string[]>(() => {
+    if (!profile?.interests) return [];
+    return profile.interests
+      .split(",")
+      .map((i) => i.trim())
+      .filter(Boolean);
+  });
+
   const { mutate, isPending } = useMutation({
     mutationFn: async (formData: FormData) => {
       const result = await updateProfile(
         { message: "", type: "success" },
-        formData
+        formData,
       );
       if (result.type === "error") {
         throw new Error(result.message);
@@ -78,7 +94,11 @@ export default function ProfileForm({ profile }: { profile: Profile | null }) {
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
+
+    // Set field manual ke formData
     formData.set("major", major);
+    // Gabungkan array interests menjadi string yang dipisahkan koma
+    formData.set("interests", interests.join(","));
 
     if (!validateForm(formData)) {
       toast.error("Validasi Gagal", {
@@ -116,7 +136,7 @@ export default function ProfileForm({ profile }: { profile: Profile | null }) {
         reader.readAsDataURL(file);
       }
     },
-    []
+    [],
   );
 
   const handleRemoveImage = useCallback(async () => {
@@ -137,51 +157,52 @@ export default function ProfileForm({ profile }: { profile: Profile | null }) {
   }, [profile?.avatar_url, queryClient]);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-8 max-w-3xl mx-auto">
       {/* Section: Informasi Pribadi */}
-      <div className="space-y-4">
-        <h2 className="text-lg sm:text-xl font-semibold text-primary border-b pb-3">
+      <div className="space-y-6 bg-card p-6 rounded-xl border shadow-sm">
+        <h2 className="text-xl font-semibold text-foreground border-b pb-4">
           Informasi Pribadi
         </h2>
 
         {/* Avatar Upload */}
-        <div className="space-y-3">
+        <div className="space-y-4">
           <Label htmlFor="avatar_url" className="text-sm font-medium">
             Foto Profil
           </Label>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
             {/* Avatar Preview */}
-            <Avatar className="h-24 w-24 sm:h-20 sm:w-20 ring-2 ring-gray-200">
+            <Avatar className="h-24 w-24 sm:h-20 sm:w-20 ring-4 ring-background shadow-md">
               <AvatarImage
                 src={imagePreview || undefined}
                 alt="Avatar profil"
+                className="object-cover"
               />
-              <AvatarFallback className="bg-gray-100">
-                <User className="h-12 w-12 sm:h-10 sm:w-10 text-gray-400" />
+              <AvatarFallback className="bg-muted">
+                <User className="h-10 w-10 text-muted-foreground" />
               </AvatarFallback>
             </Avatar>
 
             {/* Upload Controls */}
-            <div className="flex-1 w-full space-y-2">
+            <div className="flex-1 w-full space-y-3">
               <Input
                 id="avatar_url"
                 name="avatar_url"
                 type="file"
                 onChange={handleImageChange}
                 accept="image/png, image/jpeg, image/webp"
-                className="w-full cursor-pointer text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary file:cursor-pointer hover:file:bg-primary/20"
+                className="w-full cursor-pointer text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-medium file:bg-primary/10 file:text-primary hover:file:bg-primary/20 transition-colors"
                 aria-describedby="avatar-description"
               />
               <p
                 id="avatar-description"
                 className="text-xs text-muted-foreground"
               >
-                PNG, JPEG atau WebP. Maksimal 5MB.
+                Format yang didukung: PNG, JPEG atau WebP. Maksimal 5MB.
               </p>
               {imagePreview && (
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="destructive"
                   size="sm"
                   onClick={handleRemoveImage}
                   className="text-xs w-full sm:w-auto"
@@ -199,95 +220,106 @@ export default function ProfileForm({ profile }: { profile: Profile | null }) {
           defaultValue={profile?.avatar_url || ""}
         />
 
-        {/* Full Name */}
-        <div className="space-y-2">
-          <Label htmlFor="full_name" className="text-sm font-medium">
-            Nama Lengkap <span className="text-destructive">*</span>
-          </Label>
-          <Input
-            type="text"
-            name="full_name"
-            id="full_name"
-            defaultValue={profile?.full_name || ""}
-            required
-            aria-invalid={errors.full_name ? "true" : "false"}
-            aria-describedby={errors.full_name ? "full_name-error" : undefined}
-            className={errors.full_name ? "border-destructive" : ""}
-            placeholder="Masukkan nama lengkap"
-          />
-          {errors.full_name && (
-            <p id="full_name-error" className="text-sm text-destructive">
-              {errors.full_name}
-            </p>
-          )}
-        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Full Name */}
+          <div className="space-y-2">
+            <Label htmlFor="full_name" className="text-sm font-medium">
+              Nama Lengkap <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              type="text"
+              name="full_name"
+              id="full_name"
+              defaultValue={profile?.full_name || ""}
+              required
+              aria-invalid={errors.full_name ? "true" : "false"}
+              aria-describedby={
+                errors.full_name ? "full_name-error" : undefined
+              }
+              className={
+                errors.full_name
+                  ? "border-destructive focus-visible:ring-destructive"
+                  : ""
+              }
+              placeholder="Masukkan nama lengkap Anda"
+            />
+            {errors.full_name && (
+              <p
+                id="full_name-error"
+                className="text-sm text-destructive font-medium"
+              >
+                {errors.full_name}
+              </p>
+            )}
+          </div>
 
-        {/* Major */}
-        <div className="space-y-2">
-          <Label htmlFor="major" className="text-sm font-medium">
-            Jurusan <span className="text-destructive">*</span>
-          </Label>
-          <Select name="major" value={major} onValueChange={setMajor} required>
-            <SelectTrigger
-              id="major"
-              aria-invalid={errors.major ? "true" : "false"}
-              className={errors.major ? "border-destructive" : ""}
+          {/* Major */}
+          <div className="space-y-2">
+            <Label htmlFor="major" className="text-sm font-medium">
+              Jurusan <span className="text-destructive">*</span>
+            </Label>
+            <Select
+              name="major"
+              value={major}
+              onValueChange={setMajor}
+              required
             >
-              <SelectValue placeholder="Pilih jurusan..." />
-            </SelectTrigger>
-            <SelectContent>
-              {MAJORS.map((majorOption) => (
-                <SelectItem key={majorOption} value={majorOption}>
-                  {majorOption}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {errors.major && (
-            <p className="text-sm text-destructive">{errors.major}</p>
-          )}
+              <SelectTrigger
+                id="major"
+                aria-invalid={errors.major ? "true" : "false"}
+                className={
+                  errors.major
+                    ? "border-destructive focus-visible:ring-destructive"
+                    : ""
+                }
+              >
+                <SelectValue placeholder="Pilih program studi Anda..." />
+              </SelectTrigger>
+              <SelectContent>
+                {MAJORS.map((majorOption) => (
+                  <SelectItem key={majorOption} value={majorOption}>
+                    {majorOption}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.major && (
+              <p className="text-sm text-destructive font-medium">
+                {errors.major}
+              </p>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Section: Preferensi Personalisasi */}
-      <div className="space-y-4 pt-2">
-        <h2 className="text-lg sm:text-xl font-semibold text-primary border-b pb-3">
-          Preferensi Personalisasi
+      <div className="space-y-6 bg-card p-6 rounded-xl border shadow-sm">
+        <h2 className="text-xl font-semibold text-foreground border-b pb-4">
+          Preferensi Event
         </h2>
 
-        <div className="space-y-2">
-          <Label htmlFor="interests" className="text-sm font-medium">
-            Minat (pisahkan dengan koma)
-          </Label>
-          <Input
-            type="text"
-            name="interests"
-            id="interests"
-            defaultValue={profile?.interests || ""}
-            placeholder="Contoh: Programming, Desain, Musik"
-            aria-describedby="interests-description"
+        <div className="space-y-4">
+          <Label className="text-base font-medium">Minat & Topik Favorit</Label>
+          <InterestSelector
+            value={interests}
+            onChange={setInterests}
+            maxSelections={5}
           />
-          <p
-            id="interests-description"
-            className="text-xs text-muted-foreground"
-          >
-            Tambahkan minat Anda untuk rekomendasi konten yang lebih personal
-          </p>
         </div>
       </div>
 
       {/* Action Buttons */}
-      <div className="flex flex-col sm:flex-row gap-3 pt-2">
-        <SubmitButton isPending={isPending} />
+      <div className="flex flex-col sm:flex-row gap-4 pt-4 justify-end">
         <Button
           type="button"
           variant="outline"
           onClick={() => window.location.reload()}
           disabled={isPending}
-          className="w-full sm:w-auto"
+          className="w-full sm:w-32"
         >
-          Reset
+          Batal
         </Button>
+        <SubmitButton isPending={isPending} />
       </div>
     </form>
   );

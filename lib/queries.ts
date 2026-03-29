@@ -46,20 +46,6 @@ export const getRecommendedEvents = async ({
   return getVectorRecommendations(search, category);
 };
 
-export const getMajorRelatedEvents = async (): Promise<Event[]> => {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return [];
-
-  const { data, error } = await supabase.rpc(
-    "get_major_related_events_for_user",
-    { p_user_id: user.id },
-  );
-  if (error) throw new Error(error.message);
-  return data || [];
-};
-
 export const getSavedEventIds = async (): Promise<Set<string>> => {
   const {
     data: { user },

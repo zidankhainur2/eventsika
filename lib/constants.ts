@@ -1,4 +1,57 @@
-export const CATEGORIES = ["Seminar", "Workshop", "Kompetisi", "Hiburan"];
+export const CATEGORIES = [
+  "Seminar",
+  "Workshop",
+  "Kompetisi",
+  "Hiburan",
+  "Festival",
+];
+
+export const TOPIC_TAXONOMY = {
+  "Teknologi & IT": [
+    "programming",
+    "coding",
+    "AI",
+    "machine learning",
+    "web",
+    "mobile",
+    "data",
+    "cybersecurity",
+  ],
+  "Bisnis & Wirausaha": [
+    "entrepreneurship",
+    "startup",
+    "marketing",
+    "finance",
+    "wirausaha",
+    "investasi",
+  ],
+  "Seni & Kreativitas": [
+    "desain",
+    "fotografi",
+    "musik",
+    "film",
+    "lukis",
+    "budaya",
+    "dkv",
+  ],
+  "Olahraga & Kesehatan": [
+    "futsal",
+    "basket",
+    "badminton",
+    "maraton",
+    "yoga",
+    "kesehatan",
+    "gizi",
+  ],
+  "Pengembangan Diri": [
+    "leadership",
+    "public speaking",
+    "soft skills",
+    "career",
+    "beasiswa",
+    "manajemen waktu",
+  ],
+} as const;
 
 export const INTEREST_OPTIONS = [
   { label: "Teknologi", emoji: "💻" },

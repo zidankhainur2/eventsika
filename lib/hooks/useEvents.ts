@@ -35,7 +35,7 @@ export function useEvents(search: string, category: string) {
     error: majorError,
   } = useQuery({
     queryKey: ["events", "major"],
-    queryFn: queries.getMajorRelatedEvents,
+    queryFn: () => queries.getRelatedEvents("", ""),
     enabled: !!user,
   });
 

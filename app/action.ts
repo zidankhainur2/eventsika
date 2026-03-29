@@ -5,15 +5,20 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { FormState } from "./(types)/FormState";
 import { headers } from "next/headers";
-import { generateEmbedding } from "@/lib/embedding";
-import { RecommendationTestResult, type Event } from "@/lib/types";
+import {
+  generateEmbedding,
+  buildInterestText,
+  buildEventEmbeddingText,
+} from "@/lib/embedding";
+import { type Event, type RecommendationTestResult } from "@/lib/types";
+import { getChildTagsForInterests } from "@/lib/taxonomy";
 
-function getEventContent(formData: FormData): string {
-  const title = formData.get("title") as string;
-  const description = formData.get("description") as string;
-  const tags = formData.getAll("tags") as string[];
-
-  return `Judul: ${title}; Deskripsi: ${description}; Tags: ${tags.join(", ")}`;
+function parseInterests(raw: string | null | undefined): string[] {
+  if (!raw) return [];
+  return raw
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
 async function verifySuperAdmin(supabase: ReturnType<typeof createClient>) {
@@ -57,6 +62,13 @@ export async function addEvent(
     data: { user },
   } = await supabase.auth.getUser();
 
+  const tags = formData.getAll("tags") as string[];
+  const eventContent = buildEventEmbeddingText(
+    formData.get("title") as string,
+    formData.get("description") as string,
+    tags,
+  );
+
   if (!user) {
     return { message: "Anda harus login untuk membuat event.", type: "error" };
   }
@@ -96,7 +108,6 @@ export async function addEvent(
     return { message: "Gagal mengunggah gambar.", type: "error" };
   }
 
-  const eventContent = getEventContent(formData);
   const embedding = await generateEmbedding(eventContent);
 
   // Dapatkan URL publik dari gambar yang baru diunggah
@@ -165,6 +176,13 @@ export async function updateEvent(
     return { message: "Anda harus login untuk mengubah event.", type: "error" };
   }
 
+  const tags = formData.getAll("tags") as string[];
+  const eventContent = buildEventEmbeddingText(
+    formData.get("title") as string,
+    formData.get("description") as string,
+    tags,
+  );
+
   const targetMajors = formData.getAll("target_majors") as string[];
   if (targetMajors.length === 0) {
     return {
@@ -206,7 +224,6 @@ export async function updateEvent(
     imageUrl = publicUrl;
   }
 
-  const eventContent = getEventContent(formData);
   const embedding = await generateEmbedding(eventContent);
 
   const title = formData.get("title") as string;
@@ -628,6 +645,13 @@ export async function updateProfile(
       avatarUrl = `${publicUrl}?t=${new Date().getTime()}`;
     }
 
+    // Ambil profil user saat ini untuk membandingkan interests
+    const { data: currentProfile } = await supabase
+      .from("profiles")
+      .select("interests")
+      .eq("id", user.id)
+      .single();
+
     // Update profile di database
     const updateData: {
       full_name: string;
@@ -652,6 +676,18 @@ export async function updateProfile(
         message: `Gagal memperbarui profil: ${updateError.message}`,
         type: "error",
       };
+    }
+
+    if (interests !== currentProfile?.interests) {
+      const interestArray = parseInterests(interests);
+      const interestText = buildInterestText(interestArray);
+      const vector = await generateEmbedding(interestText);
+      if (vector) {
+        await supabase.rpc("update_user_interest_vector", {
+          p_user_id: user.id,
+          p_interest_vec: vector,
+        });
+      }
     }
 
     // Revalidate paths
@@ -778,6 +814,8 @@ export async function signOut() {
 export async function getVectorRecommendations(
   search?: string,
   category?: string,
+  weightSemantic: number = 0.8,
+  weightRule: number = 0.2,
 ): Promise<Event[]> {
   try {
     const supabase = createClient();
@@ -786,122 +824,139 @@ export async function getVectorRecommendations(
       error: authError,
     } = await supabase.auth.getUser();
 
-    if (authError || !user) {
-      console.error("Error getting user:", authError);
-      return [];
-    }
+    if (authError || !user) return [];
 
-    // 1. Dapatkan profil pengguna
+    // Ambil profil user
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
-      .select("interests, major")
+      .select(
+        "interests, major, interest_vector, interests_updated_at, updated_at",
+      )
       .eq("id", user.id)
       .single();
 
-    if (
-      profileError ||
-      !profile?.interests ||
-      profile.interests.trim() === ""
-    ) {
-      return [];
+    if (profileError || !profile?.interests?.trim()) return [];
+
+    // Parse parent interests dari profil
+    const parentInterests = parseInterests(profile.interests);
+
+    // ── TAXONOMY EXPANSION ────────────────────────────────────────────
+    // Expand parent interests → child tags untuk matching di RPC
+    // Contoh: ['Teknologi & IT'] → ['programming', 'coding', 'AI', ...]
+    const expandedChildTags = getChildTagsForInterests(parentInterests);
+    // ─────────────────────────────────────────────────────────────────
+
+    // Cache interest vector
+    let interestVector: number[] | null = null;
+    const vectorIsFresh =
+      profile.interest_vector &&
+      profile.interests_updated_at &&
+      profile.updated_at &&
+      new Date(profile.interests_updated_at) >= new Date(profile.updated_at);
+
+    if (vectorIsFresh && profile.interest_vector) {
+      interestVector = profile.interest_vector as unknown as number[];
+    } else {
+      const interestText = buildInterestText(parentInterests);
+      interestVector = await generateEmbedding(interestText);
+
+      if (interestVector) {
+        // Fire-and-forget cache update (tidak block response)
+        Promise.resolve(
+          supabase.rpc("update_user_interest_vector", {
+            p_user_id: user.id,
+            p_interest_vec: interestVector,
+          }),
+        )
+          .then()
+          .catch((e) =>
+            console.warn("[Cache] Gagal update interest_vector:", e),
+          );
+      }
     }
 
-    // 2. Hasilkan embedding dari minat pengguna
-    const interestVector = await generateEmbedding(profile.interests);
+    if (!interestVector) return [];
 
-    if (!interestVector) {
-      return [];
-    }
-
-    // 3. Panggil RPC dengan vektor minat
+    // Panggil RPC yang sudah diperbaiki — bobot sebagai parameter
     let query = supabase.rpc("get_hybrid_recommendations", {
       query_embedding: interestVector,
       p_user_id: user.id,
-      p_user_major: profile.major,
+      p_user_major: profile.major ?? "",
+      p_user_interests: expandedChildTags, // ← child tags, bukan parent
+      p_weight_semantic: weightSemantic,
+      p_weight_rule: weightRule,
+      p_threshold: 0.3,
+      match_count: 30,
     });
 
-    // 4. Terapkan Keyword Matching (Search)
+    // Filter search/category diterapkan di dalam query (bukan post-filter)
+    // Catatan: filter ini bekerja di atas hasil RPC — acceptable untuk dataset kecil
+    // Untuk skala besar, filter harus dimasukkan ke dalam RPC
     if (search) {
-      const searchTerm = `%${search}%`;
+      const s = `%${search}%`;
       query = query.or(
-        `title.ilike.${searchTerm},organizer.ilike.${searchTerm},description.ilike.${searchTerm}`,
+        `title.ilike.${s},organizer.ilike.${s},description.ilike.${s}`,
       );
     }
-
-    // 5. Terapkan Category Matching
     if (category) {
-      const categories = category.split(",");
-      query = query.in("category", categories);
+      query = query.in("category", category.split(","));
     }
 
-    // Eksekusi query final
     const { data, error } = await query;
-
     if (error) {
-      console.error("Error matching events:", error);
+      console.error("[Rekomendasi] RPC error:", error.message);
       return [];
     }
-
-    return data || [];
+    return (data ?? []) as Event[];
   } catch (error) {
-    console.error("Error lengkap di getVectorRecommendations:", error);
-    throw new Error(`Gagal mengambil rekomendasi: ${(error as Error).message}`);
+    console.error("[Rekomendasi] Unexpected error:", error);
+    return [];
   }
 }
 
-/**
- * Menjalankan tes rekomendasi untuk satu pengguna spesifik.
- * @param userId ID pengguna yang akan diuji
- * @returns Profil pengguna dan daftar rekomendasi beserta skornya
- */
 export async function runRecommendationTest(
   userId: string,
-  weightSemantic: number = 0.5,
-  weightRule: number = 0.5,
+  weightSemantic = 0.5,
+  weightRule = 0.5,
 ): Promise<RecommendationTestResult> {
   const supabase = createClient();
 
-  // 1. Ambil profil lengkap pengguna yang dipilih
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from("profiles")
-    .select("*")
+    .select("id, full_name, major, interests, role, avatar_url")
     .eq("id", userId)
     .single();
 
-  if (!profile) {
-    throw new Error("Profil pengguna tidak ditemukan.");
-  }
-
+  if (profileError || !profile) throw new Error("Profil tidak ditemukan.");
   if (!profile.interests || !profile.major) {
     return { profile, recommendations: [] };
   }
 
-  let interestVector;
-  try {
-    interestVector = await generateEmbedding(profile.interests);
-  } catch (error) {
-    throw new Error(`Gagal membuat vektor minat: ${(error as Error).message}`);
-  }
+  const parentInterests = parseInterests(profile.interests);
 
-  if (!interestVector) {
-    return { profile, recommendations: [] };
-  }
+  // Taxonomy expansion untuk eksperimen — sama persis dengan produksi
+  const expandedChildTags = getChildTagsForInterests(parentInterests);
+
+  const interestText = buildInterestText(parentInterests);
+  const interestVector = await generateEmbedding(interestText);
+  if (!interestVector)
+    throw new Error("Gagal generate embedding. Periksa HF_API_TOKEN.");
+
   const { data: recommendations, error: rpcError } = await supabase.rpc(
-    "test_match_events",
+    "evaluate_recommendations",
     {
-      p_user_major: profile.major,
       query_embedding: interestVector,
+      p_user_id: userId,
+      p_user_major: profile.major,
+      p_user_interests: expandedChildTags, // ← konsisten dengan produksi
       p_weight_semantic: weightSemantic,
       p_weight_rule: weightRule,
+      p_threshold: 0.0,
+      match_count: 50,
     },
   );
 
-  if (rpcError) {
-    throw new Error(
-      `Gagal menjalankan RPC 'test_match_events': ${rpcError.message}`,
-    );
-  }
+  if (rpcError) throw new Error(`RPC gagal: ${rpcError.message}`);
 
-  // 4. Kembalikan data lengkap untuk ditampilkan di UI
-  return { profile, recommendations: recommendations || [] };
+  return { profile, recommendations: recommendations ?? [] };
 }

@@ -1,5 +1,3 @@
-// zidankhainur2/eventsika/eventsika-ee9c3bd32c06e421ca764b3a68afba6c029dad58/app/(auth)/onboarding/page.tsx
-
 "use client";
 
 import { useState, useTransition } from "react";
@@ -7,23 +5,16 @@ import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { saveUserInterests } from "@/app/action";
-import { CheckCircle2, Sparkles } from "lucide-react";
-import { INTEREST_OPTIONS } from "@/lib/constants"; // Kita akan import dari sini
+import { Sparkles } from "lucide-react";
+import { InterestSelector } from "@/components/InterestSelector";
 
 const MIN_INTERESTS = 3;
+const MAX_INTERESTS = 5; // Kita tentukan batas maksimal pilihan, misalnya 5
 
 export default function OnboardingPage() {
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
-
-  const handleInterestToggle = (interest: string) => {
-    setSelectedInterests((prev) =>
-      prev.includes(interest)
-        ? prev.filter((i) => i !== interest)
-        : [...prev, interest]
-    );
-  };
 
   const handleSubmit = () => {
     const formData = new FormData();
@@ -42,7 +33,7 @@ export default function OnboardingPage() {
   const isSubmitDisabled = selectedInterests.length < MIN_INTERESTS;
   const progress = Math.min(
     (selectedInterests.length / MIN_INTERESTS) * 100,
-    100
+    100,
   );
 
   return (
@@ -69,7 +60,7 @@ export default function OnboardingPage() {
         <div className="mb-6 px-2">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-muted-foreground">
-              {selectedInterests.length} dari {MIN_INTERESTS} dipilih
+              {selectedInterests.length} dari {MIN_INTERESTS} (min) dipilih
             </span>
             <span className="text-sm font-medium text-primary">
               {Math.round(progress)}%
@@ -85,43 +76,17 @@ export default function OnboardingPage() {
 
         {/* Card Section */}
         <Card className="p-6 md:p-10 shadow-xl border-border">
-          {/* Interest Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 md:gap-4 mb-8">
-            {INTEREST_OPTIONS.map(({ label, emoji }) => {
-              const isSelected = selectedInterests.includes(label);
-              return (
-                <button
-                  key={label}
-                  type="button"
-                  onClick={() => handleInterestToggle(label)}
-                  className={`relative group p-4 md:p-5 rounded-2xl text-center transition-all duration-300 transform hover:scale-105 active:scale-95
-                    ${
-                      isSelected
-                        ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30"
-                        : "bg-muted hover:bg-secondary text-foreground border-2 border-border hover:border-primary/50"
-                    }`}
-                >
-                  {/* Checkmark */}
-                  {isSelected && (
-                    <div className="absolute -top-2 -right-2 bg-background rounded-full p-1 shadow-md">
-                      <CheckCircle2 className="w-5 h-5 text-green-500" />
-                    </div>
-                  )}
-
-                  {/* Content */}
-                  <div className="flex flex-col items-center gap-2">
-                    <span className="text-3xl md:text-4xl">{emoji}</span>
-                    <span className="text-sm md:text-base font-semibold leading-tight">
-                      {label}
-                    </span>
-                  </div>
-                </button>
-              );
-            })}
+          {/* Menggunakan InterestSelector di sini */}
+          <div className="mb-8">
+            <InterestSelector
+              value={selectedInterests}
+              onChange={setSelectedInterests}
+              maxSelections={MAX_INTERESTS}
+            />
           </div>
 
           {/* Submit Section */}
-          <div className="flex flex-col items-center gap-4">
+          <div className="flex flex-col items-center gap-4 border-t pt-8">
             <Button
               type="button"
               onClick={handleSubmit}

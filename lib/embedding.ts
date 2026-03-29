@@ -1,27 +1,36 @@
+import { getChildTagsForInterests } from "@/lib/taxonomy";
+
 const EMBEDDING_API_URL =
-  "https://router.huggingface.co/hf-inference/models/sentence-transformers/all-MiniLM-L6-v2/pipeline/feature-extraction";
+  "https://router.huggingface.co/hf-inference/models/" +
+  "sentence-transformers/all-MiniLM-L6-v2/pipeline/feature-extraction";
+
+const EXPECTED_DIM = 384;
+const API_TIMEOUT_MS = 30_000; // 30 detik — HF cold start bisa lama
 
 /**
- * Menghasilkan embedding (vektor) dari sebuah teks menggunakan Hugging Face.
- * @param text Teks yang akan di-embed
- * @returns Array angka (vektor 384 dimensi) atau null jika gagal
+ * Menghasilkan embedding dari teks menggunakan Hugging Face Inference API.
+ * Mengembalikan null jika teks kosong, API error, atau dimensi tidak valid.
  */
 export async function generateEmbedding(
-  text: string
+  text: string,
 ): Promise<number[] | null> {
-  const cleanedText = text.replace(/\n/g, " ").trim();
+  const cleanedText = text.replace(/\n+/g, " ").trim();
 
-  if (!cleanedText) {
-    console.warn("generateEmbedding: teks kosong atau hanya whitespace");
+  if (!cleanedText || cleanedText.length < 3) {
+    console.warn(
+      "[Embedding] Teks terlalu pendek atau kosong, skip embedding.",
+    );
     return null;
   }
 
-  // Validasi HF_API_TOKEN
   const apiToken = process.env.HF_API_TOKEN;
   if (!apiToken) {
-    console.error("HF_API_TOKEN tidak ditemukan di environment variables");
+    console.error("[Embedding] HF_API_TOKEN tidak ditemukan di environment.");
     return null;
   }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
 
   try {
     const response = await fetch(EMBEDDING_API_URL, {
@@ -30,61 +39,103 @@ export async function generateEmbedding(
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiToken}`,
       },
-      body: JSON.stringify({
-        inputs: cleanedText,
-      }),
+      body: JSON.stringify({ inputs: cleanedText }),
+      signal: controller.signal,
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Hugging Face API error (${response.status}):`, errorText);
-
-      // Tambahan info untuk debugging
-      if (response.status === 401) {
-        console.error(
-          "Token tidak valid atau tidak memiliki permission yang cukup"
-        );
-      } else if (response.status === 404) {
-        console.error("Model atau endpoint tidak ditemukan");
-      }
-
+      const errorBody = await response
+        .text()
+        .catch(() => "(tidak bisa dibaca)");
+      console.error(`[Embedding] API error ${response.status}: ${errorBody}`);
       return null;
     }
 
     const result = await response.json();
 
-    // Validasi format respons
+    // Normalisasi format respons: nested [[...]] atau flat [...]
     let embedding: number[] | null = null;
 
     if (Array.isArray(result)) {
-      // Cek apakah nested array [[...]] atau flat array [...]
       if (Array.isArray(result[0]) && typeof result[0][0] === "number") {
-        // Format nested: [[...]]
-        embedding = result[0];
+        embedding = result[0] as number[];
       } else if (typeof result[0] === "number") {
-        // Format flat: [...]
-        embedding = result;
+        embedding = result as number[];
       }
     }
 
     if (!embedding) {
-      console.error("Format respons API tidak valid:", result);
+      console.error(
+        "[Embedding] Format respons tidak dikenal:",
+        JSON.stringify(result).slice(0, 100),
+      );
       return null;
     }
 
-    // Validasi dimensi vektor (all-MiniLM-L6-v2 = 384 dimensi)
-    console.log(`Embedding generated with ${embedding.length} dimensions`);
-
-    if (embedding.length === 384) {
-      return embedding;
-    } else {
-      console.warn(
-        `Unexpected embedding dimension: ${embedding.length}, expected 384`
+    // VALIDASI KETAT: dimensi harus tepat 384
+    if (embedding.length !== EXPECTED_DIM) {
+      console.error(
+        `[Embedding] Dimensi tidak valid: dapat ${embedding.length}, diharapkan ${EXPECTED_DIM}. ` +
+          `Embedding TIDAK digunakan.`,
       );
-      return embedding; // Tetap return meskipun dimensi tidak sesuai
+      return null; // Tidak return embedding yang salah dimensi
     }
+
+    return embedding;
   } catch (error) {
-    console.error("Error saat generate embedding:", error);
+    if ((error as Error).name === "AbortError") {
+      console.error(
+        `[Embedding] Timeout setelah ${API_TIMEOUT_MS}ms. HF API mungkin cold start.`,
+      );
+    } else {
+      console.error("[Embedding] Error tidak terduga:", error);
+    }
     return null;
+  } finally {
+    clearTimeout(timeoutId);
   }
+}
+
+/**
+ * Membuat teks embedding dari parent interests user.
+ * Menggabungkan nama parent + sample child tags untuk
+ * representasi embedding yang lebih kaya.
+ *
+ * @example
+ *   buildInterestText(['Teknologi & IT', 'Bisnis & Wirausaha'])
+ *   // → "Teknologi IT programming coding web development machine learning
+ *   //     Bisnis Wirausaha entrepreneurship startup marketing finance"
+ */
+export function buildInterestText(parentInterests: string[]): string {
+  if (!parentInterests.length) return '';
+
+  // Ambil child tags untuk enrichment embedding
+  const childTags = getChildTagsForInterests(parentInterests);
+
+  // Gabungkan parent names (cleaned) + child tags
+  const parentNames = parentInterests
+    .map((p) => p.replace(/[&]/g, '').replace(/\s+/g, ' ').trim())
+    .join(' ');
+
+  const childSample = childTags.slice(0, 20).join(' ');
+
+  return `${parentNames} ${childSample}`.trim();
+}
+
+/**
+ * Membuat string konten event dari FormData untuk di-embed.
+ * Menggabungkan judul + deskripsi + tags agar embedding kaya konteks.
+ */
+export function buildEventEmbeddingText(
+  title: string,
+  description: string,
+  tags: string[],
+): string {
+  const parts = [
+    `Judul: ${title}`,
+    `Deskripsi: ${description}`,
+    tags.length > 0 ? `Topik: ${tags.join(", ")}` : "",
+  ].filter(Boolean);
+
+  return parts.join(". ");
 }

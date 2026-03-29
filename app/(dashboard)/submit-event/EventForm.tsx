@@ -16,7 +16,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -24,12 +23,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FiX } from "react-icons/fi";
+// Pastikan path import ini sesuai dengan lokasi file komponenmu
+import { EventTagSelector } from "@/components/EventTagSelector";
 
 interface EventFormProps {
   formAction: (
     prevState: any,
-    formData: FormData
+    formData: FormData,
   ) => Promise<FormState & { slug?: string }>;
   event?: Event | null;
   buttonText: string;
@@ -43,15 +43,15 @@ export default function EventForm({
   const router = useRouter();
   const queryClient = useQueryClient();
   const [imagePreview, setImagePreview] = useState<string | null>(
-    event?.image_url || null
+    event?.image_url || null,
   );
 
   const [category, setCategory] = useState<string>(event?.category || "");
   const [targetMajors, setTargetMajors] = useState<string[]>(
-    event?.target_majors || ["Umum"]
+    event?.target_majors || ["Umum"],
   );
 
-  const [tagInput, setTagInput] = useState<string>("");
+  // State untuk menyimpan tag yang dipilih dari EventTagSelector
   const [tags, setTags] = useState<string[]>(event?.tags || []);
 
   const { mutate, isPending } = useMutation({
@@ -83,25 +83,6 @@ export default function EventForm({
     tags.forEach((tag) => formData.append("tags", tag));
 
     mutate(formData);
-  };
-
-  const handleTagInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" || e.key === ",") {
-      e.preventDefault();
-      const newTags = tagInput
-        .split(",")
-        .map((tag) => tag.trim())
-        .filter((tag) => tag.length > 0 && !tags.includes(tag));
-
-      if (newTags.length > 0) {
-        setTags([...tags, ...newTags]);
-      }
-      setTagInput("");
-    }
-  };
-
-  const removeTag = (tagToRemove: string) => {
-    setTags(tags.filter((tag) => tag !== tagToRemove));
   };
 
   const handleMajorChange = (major: string, checked: boolean) => {
@@ -249,42 +230,14 @@ export default function EventForm({
         </div>
       </fieldset>
 
+      {/* Bagian Tags & Topik yang baru diintegrasikan */}
       <fieldset className="space-y-4">
         <legend className="font-heading text-xl font-semibold text-text-primary">
           Tags & Topik
         </legend>
-        <div className="grid w-full items-center gap-1.5">
-          <Label htmlFor="tags-input">
-            Topik Spesifik (tekan Enter/koma untuk menambah)
-          </Label>
-          <Input
-            id="tags-input"
-            placeholder="Contoh: UI/UX, Programming, Startup"
-            value={tagInput}
-            onChange={(e) => setTagInput(e.target.value)}
-            onKeyDown={handleTagInputKeyDown}
-          />
-          <p className="text-sm text-muted-foreground">
-            Ini akan sangat membantu dalam merekomendasikan eventmu kepada
-            audiens yang tepat.
-          </p>
-        </div>
-        <div
-          className={cn("flex flex-wrap gap-2", tags.length === 0 && "hidden")}
-        >
-          {tags.map((tag) => (
-            <Badge key={tag} variant="secondary" className="text-sm py-1 px-3">
-              {tag}
-              <button
-                type="button"
-                className="ml-2 rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                onClick={() => removeTag(tag)}
-                aria-label={`Hapus tag ${tag}`}
-              >
-                <FiX className="h-4 w-4" />
-              </button>
-            </Badge>
-          ))}
+        <div className="grid w-full gap-1.5">
+          <Label>Topik Spesifik</Label>
+          <EventTagSelector value={tags} onChange={setTags} maxTags={5} />
         </div>
       </fieldset>
 
@@ -322,7 +275,7 @@ export default function EventForm({
                   "transition-colors",
                   targetMajors.includes("Umum") &&
                     major !== "Umum" &&
-                    "text-muted-foreground"
+                    "text-muted-foreground",
                 )}
               >
                 {major}

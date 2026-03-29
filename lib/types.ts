@@ -13,7 +13,13 @@ export type Event = {
   target_majors: string[] | null;
   slug: string;
   tags: string[] | null;
-  embedding: any;
+  embedding: number[] | null; // Jangan expose ke client — hanya untuk type safety
+  // Skor dari RPC (opsional — hanya ada jika di-select dari RPC)
+  vector_score?: number;
+  major_score?: number;
+  tag_score?: number;
+  rule_score?: number;
+  total_score?: number;
 };
 
 export type Profile = {
@@ -32,12 +38,34 @@ export type TestResultItem = {
   category: string;
   tags: string[] | null;
   target_majors: string[] | null;
+  event_date: string;
   vector_score: number;
   major_score: number;
-  total_score: number;
+  tag_score: number;
+  rule_score: number; // = major_score * 0.5 + tag_score * 0.5
+  total_score: number; // = vector * alpha + rule * beta
 };
 
 export type RecommendationTestResult = {
   profile: Profile | null;
   recommendations: TestResultItem[];
+};
+
+export type GroundTruthItem = {
+  userId: string;
+  eventId: string;
+  isRelevant: boolean; // true jika responden menilai 4 atau 5
+};
+
+export type EvaluationResult = {
+  scenario: string;
+  weightSemantic: number;
+  weightRule: number;
+  precisionAt5: number;
+  precisionAt10: number;
+  recallAt5: number;
+  recallAt10: number;
+  f1At5: number;
+  f1At10: number;
+  map: number; // Mean Average Precision
 };

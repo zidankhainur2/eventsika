@@ -3,9 +3,14 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { FiPlay, FiLoader } from "react-icons/fi";
+import { FiPlay, FiLoader, FiDownload } from "react-icons/fi";
 
-import { type Profile, type RecommendationTestResult } from "@/lib/types";
+import {
+  type Profile,
+  type RecommendationTestResult,
+  type EvaluationResult,
+} from "@/lib/types";
+import { evaluateScenario } from "@/lib/metrics";
 import { runRecommendationTest } from "@/app/action";
 import { getAllProfiles } from "@/lib/queries";
 
@@ -36,101 +41,109 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
-// Definisi Skenario Pengujian
 const SCENARIOS = [
   {
     id: 1,
-    label: "Skenario 1 (1.0 : 0.0)",
-    desc: "Murni Semantik",
+    label: "S1 (1.0 : 0.0)",
+    desc: "Pure Semantic",
     semantic: 1.0,
     rule: 0.0,
   },
   {
     id: 2,
-    label: "Skenario 2 (0.8 : 0.2)",
-    desc: "Dominan Semantik",
+    label: "S2 (0.8 : 0.2)",
+    desc: "Dominant Semantic",
     semantic: 0.8,
     rule: 0.2,
   },
   {
     id: 3,
-    label: "Skenario 3 (0.5 : 0.5)",
-    desc: "Seimbang",
+    label: "S3 (0.5 : 0.5)",
+    desc: "Balanced",
     semantic: 0.5,
     rule: 0.5,
   },
   {
     id: 4,
-    label: "Skenario 4 (0.2 : 0.8)",
-    desc: "Dominan Jurusan",
+    label: "S4 (0.2 : 0.8)",
+    desc: "Dominant Rule-Based",
     semantic: 0.2,
     rule: 0.8,
   },
   {
     id: 5,
-    label: "Skenario 5 (0.0 : 1.0)",
-    desc: "Murni Jurusan",
+    label: "S5 (0.0 : 1.0)",
+    desc: "Pure Rule-Based",
     semantic: 0.0,
     rule: 1.0,
   },
 ];
 
-export default function RecommendationTestPage() {
-  const [selectedUserId, setSelectedUserId] = useState<string>("");
-  const [activeScenario, setActiveScenario] = useState(SCENARIOS[2]); // Default Skenario 3
+const fmt = (n?: number) => (n == null || isNaN(n) ? "0.000" : n.toFixed(3));
 
-  // 1. Ambil daftar semua profil untuk dropdown
+export default function RecommendationTestPage() {
+  const [selectedUserId, setSelectedUserId] = useState("");
+  const [activeScenario, setActiveScenario] = useState(SCENARIOS[2]);
+  const [testResult, setTestResult] = useState<RecommendationTestResult | null>(
+    null,
+  );
+
   const { data: profiles, isLoading: isLoadingProfiles } = useQuery<Profile[]>({
     queryKey: ["allProfiles"],
     queryFn: getAllProfiles,
   });
 
-  // 2. Siapkan mutation untuk menjalankan tes dengan parameter tambahan (bobot)
-  const {
-    mutate: runTest,
-    data: testResult,
-    isPending: isRunningTest,
-    isIdle,
-  } = useMutation<
-    RecommendationTestResult,
-    Error,
-    { userId: string; weightSemantic: number; weightRule: number }
-  >({
-    mutationFn: ({ userId, weightSemantic, weightRule }) =>
+  const { mutate: runTest, isPending } = useMutation({
+    mutationFn: () =>
       runRecommendationTest(
-        userId,
-        weightSemantic,
-        weightRule,
+        selectedUserId,
+        activeScenario.semantic,
+        activeScenario.rule,
       ) as Promise<RecommendationTestResult>,
-    onError: (error) => {
-      toast.error("Test Gagal", { description: error.message });
+    onSuccess: (data) => {
+      setTestResult(data);
+      toast.success(`Selesai — ${data.recommendations.length} event ditemukan`);
     },
-    onSuccess: () => {
-      toast.success(`Test Berhasil (${activeScenario.label})!`);
-    },
+    onError: (e) =>
+      toast.error("Test gagal", { description: (e as Error).message }),
   });
 
-  const handleRunTest = () => {
+  const handleRun = () => {
     if (!selectedUserId) {
-      toast.warning("Pilih Pengguna", {
-        description: "Anda harus memilih pengguna untuk diuji.",
-      });
+      toast.warning("Pilih pengguna terlebih dahulu.");
       return;
     }
-    // Kirimkan userId beserta bobot dari skenario yang sedang aktif
-    runTest({
-      userId: selectedUserId,
-      weightSemantic: activeScenario.semantic,
-      weightRule: activeScenario.rule,
-    });
+    runTest();
   };
 
-  const formatScore = (num?: number) => {
-    // Jika num adalah undefined, null, atau bukan angka, kembalikan "0.000"
-    if (num === undefined || num === null || isNaN(num)) {
-      return "0.000";
-    }
-    return num.toFixed(3);
+  // Export hasil ke CSV untuk dianalisis offline
+  const handleExport = () => {
+    if (!testResult?.recommendations.length) return;
+
+    const header =
+      "rank,id,title,category,vector_score,major_score,tag_score,rule_score,total_score";
+    const rows = testResult.recommendations.map((r, i) =>
+      [
+        i + 1,
+        r.id,
+        `"${r.title.replace(/"/g, '""')}"`,
+        r.category ?? "",
+        fmt(r.vector_score),
+        fmt(r.major_score),
+        fmt(r.tag_score),
+        fmt(r.rule_score),
+        fmt(r.total_score),
+      ].join(","),
+    );
+
+    const csv = [header, ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `hasil_${activeScenario.label.replace(/[^a-z0-9]/gi, "_")}_${selectedUserId.slice(0, 8)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -140,38 +153,35 @@ export default function RecommendationTestPage() {
           Uji Algoritma Rekomendasi
         </h1>
         <p className="text-muted-foreground">
-          Pilih pengguna dan skenario pembobotan untuk mensimulasikan hasil
-          rekomendasi.
+          Simulasi 5 skenario pembobotan weighted hybrid. Skor komponen
+          ditampilkan secara transparan.
         </p>
       </div>
 
-      {/* --- Bagian Kontrol --- */}
+      {/* Kontrol */}
       <Card>
-        <CardContent className="pt-6 flex flex-col gap-6">
-          {/* Skenario Selection */}
-          <div className="space-y-3">
-            <Label>Pilih Skenario (Bobot Vektor : Bobot Jurusan)</Label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
-              {SCENARIOS.map((scenario) => (
+        <CardContent className="pt-6 space-y-6">
+          {/* Pilih Skenario */}
+          <div className="space-y-2">
+            <Label>Skenario Pembobotan (α : β)</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
+              {SCENARIOS.map((s) => (
                 <Button
-                  key={scenario.id}
-                  variant={
-                    activeScenario.id === scenario.id ? "default" : "outline"
-                  }
-                  onClick={() => setActiveScenario(scenario)}
-                  className="flex flex-col h-auto items-start p-3 gap-1"
+                  key={s.id}
+                  variant={activeScenario.id === s.id ? "default" : "outline"}
+                  onClick={() => setActiveScenario(s)}
+                  className="flex flex-col h-auto items-center p-3 gap-1"
                 >
-                  <span className="font-semibold">{scenario.label}</span>
-                  <span className="text-xs opacity-80 font-normal">
-                    {scenario.desc}
-                  </span>
+                  <span className="font-semibold text-sm">{s.label}</span>
+                  <span className="text-xs opacity-70">{s.desc}</span>
                 </Button>
               ))}
             </div>
           </div>
 
+          {/* Pilih User + Tombol Run */}
           <div className="flex flex-col sm:flex-row gap-4 items-end">
-            <div className="flex-1 w-full">
+            <div className="flex-1">
               <Label htmlFor="user-select">Pilih Pengguna</Label>
               <Select value={selectedUserId} onValueChange={setSelectedUserId}>
                 <SelectTrigger id="user-select">
@@ -182,140 +192,146 @@ export default function RecommendationTestPage() {
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  {profiles?.map((profile) => (
-                    <SelectItem key={profile.id} value={profile.id}>
-                      {profile.full_name || "Tanpa Nama"}{" "}
-                      <span className="text-muted-foreground text-xs ml-2">
-                        ({profile.major || "Tanpa Jurusan"})
+                  {profiles?.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.full_name || "Tanpa Nama"}{" "}
+                      <span className="text-muted-foreground text-xs ml-1">
+                        ({p.major || "Tanpa Jurusan"})
                       </span>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            <Button
-              onClick={handleRunTest}
-              disabled={isRunningTest || !selectedUserId}
-              className="w-full sm:w-auto"
-            >
-              {isRunningTest ? (
-                <FiLoader className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <FiPlay className="mr-2 h-4 w-4" />
+
+            <div className="flex gap-2">
+              <Button
+                onClick={handleRun}
+                disabled={isPending || !selectedUserId}
+              >
+                {isPending ? (
+                  <FiLoader className="mr-2 animate-spin" />
+                ) : (
+                  <FiPlay className="mr-2" />
+                )}
+                Jalankan
+              </Button>
+              {testResult && (
+                <Button variant="outline" onClick={handleExport}>
+                  <FiDownload className="mr-2" /> Export CSV
+                </Button>
               )}
-              Jalankan Tes
-            </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* --- Bagian Hasil --- */}
-      {!isIdle && !isRunningTest && testResult && (
+      {/* Hasil */}
+      {testResult && !isPending && (
         <Card>
           <CardHeader>
             <CardTitle>
-              Hasil Tes untuk: {testResult.profile?.full_name || "N/A"}
+              Hasil: {testResult.profile?.full_name || "N/A"} —{" "}
+              <span className="text-primary">{activeScenario.label}</span>
             </CardTitle>
-            <CardDescription className="flex flex-col gap-2 mt-2">
-              <div className="flex flex-wrap gap-x-4">
-                <span>
-                  Minat:{" "}
-                  <span className="font-medium text-primary">
-                    {testResult.profile?.interests || "Tidak ada"}
-                  </span>
-                </span>
-                <span>
-                  Jurusan:{" "}
-                  <span className="font-medium text-primary">
-                    {testResult.profile?.major || "Tidak ada"}
-                  </span>
-                </span>
-              </div>
-              <div className="text-sm font-semibold text-muted-foreground bg-muted p-2 rounded-md inline-block w-fit mt-2">
-                Skenario yang diterapkan: {activeScenario.label} (Semantik:{" "}
-                {activeScenario.semantic}, Jurusan: {activeScenario.rule})
-              </div>
+            <CardDescription>
+              Jurusan: <strong>{testResult.profile?.major || "-"}</strong> |
+              Minat: <strong>{testResult.profile?.interests || "-"}</strong>
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {testResult.recommendations.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Peringkat</TableHead>
-                    <TableHead>Event</TableHead>
-                    <TableHead>
-                      Skor Vektor (x{activeScenario.semantic})
-                    </TableHead>
-                    <TableHead>Skor Jurusan (x{activeScenario.rule})</TableHead>
-                    <TableHead>Skor Total</TableHead>
-                    <TableHead>Tags</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {testResult.recommendations.map((event, index) => {
-                    // Kalkulasi ulang sementara untuk tampilan jika belum didukung backend
-                    // Jika total_score sudah dari backend, bagian ini bisa diabaikan
-                    const appliedVectorScore =
-                      event.vector_score * activeScenario.semantic;
-                    const appliedMajorScore =
-                      event.major_score * activeScenario.rule;
-                    const displayTotal = appliedVectorScore + appliedMajorScore;
-
-                    return (
-                      <TableRow key={event.id}>
-                        <TableCell>{index + 1}</TableCell>
-                        <TableCell className="font-medium">
-                          {event.title}
-                          <br />
-                          <span className="text-xs text-muted-foreground">
-                            {event.category} -{" "}
-                            {event.target_majors?.[0] || "Umum"}
-                          </span>
+            {testResult.recommendations.length === 0 ? (
+              <p className="text-muted-foreground text-center py-8">
+                Tidak ada rekomendasi. Coba turunkan threshold atau periksa
+                profil pengguna.
+              </p>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-12">#</TableHead>
+                      <TableHead>Event</TableHead>
+                      <TableHead className="text-center">S_semantic</TableHead>
+                      <TableHead className="text-center">S_major</TableHead>
+                      <TableHead className="text-center">S_tag</TableHead>
+                      <TableHead className="text-center">S_rule</TableHead>
+                      <TableHead className="text-center font-bold">
+                        S_total
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {testResult.recommendations.map((r, i) => (
+                      <TableRow key={r.id}>
+                        <TableCell className="font-mono text-muted-foreground">
+                          {i + 1}
                         </TableCell>
+                        <TableCell>
+                          <div className="font-medium">{r.title}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {r.category} · {r.target_majors?.[0] || "Umum"}
+                          </div>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {r.tags?.map((t) => (
+                              <Badge
+                                key={t}
+                                variant="secondary"
+                                className="text-xs"
+                              >
+                                {t}
+                              </Badge>
+                            ))}
+                          </div>
+                        </TableCell>
+                        {/* Semantic score */}
                         <TableCell
                           className={cn(
-                            "font-mono",
-                            event.vector_score > 0.4
-                              ? "font-bold text-blue-600"
+                            "text-center font-mono text-sm",
+                            (r.vector_score ?? 0) > 0.5
+                              ? "text-blue-600 font-bold"
                               : "text-muted-foreground",
                           )}
                         >
-                          {formatScore(event.vector_score)}
+                          {fmt(r.vector_score)}
                         </TableCell>
+                        {/* Major score */}
                         <TableCell
                           className={cn(
-                            "font-mono",
-                            event.major_score > 0
-                              ? "font-bold text-green-600"
+                            "text-center font-mono text-sm",
+                            (r.major_score ?? 0) >= 1
+                              ? "text-green-600 font-bold"
+                              : (r.major_score ?? 0) === 0.5
+                                ? "text-yellow-600"
+                                : "text-muted-foreground",
+                          )}
+                        >
+                          {fmt(r.major_score)}
+                        </TableCell>
+                        {/* Tag score */}
+                        <TableCell
+                          className={cn(
+                            "text-center font-mono text-sm",
+                            (r.tag_score ?? 0) > 0
+                              ? "text-purple-600 font-bold"
                               : "text-muted-foreground",
                           )}
                         >
-                          +{formatScore(event.major_score)}
+                          {fmt(r.tag_score)}
                         </TableCell>
-                        <TableCell className="font-mono font-bold text-lg text-primary">
-                          {formatScore(displayTotal)}
+                        {/* Rule score */}
+                        <TableCell className="text-center font-mono text-sm text-orange-600">
+                          {fmt(r.rule_score)}
                         </TableCell>
-                        <TableCell className="flex flex-wrap gap-1 max-w-xs">
-                          {event.tags?.map((tag) => (
-                            <Badge key={tag} variant="secondary">
-                              {tag}
-                            </Badge>
-                          )) || (
-                            <span className="text-xs text-muted-foreground">
-                              No Tags
-                            </span>
-                          )}
+                        {/* Total score */}
+                        <TableCell className="text-center font-mono font-bold text-lg text-primary">
+                          {fmt(r.total_score)}
                         </TableCell>
                       </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            ) : (
-              <p className="text-center text-muted-foreground">
-                Tidak ada rekomendasi yang ditemukan. Pastikan data event cukup.
-              </p>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>

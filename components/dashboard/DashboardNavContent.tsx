@@ -29,7 +29,6 @@ const navLinks = [
 ];
 
 const adminLinks = [
-  { href: "/admin", label: "Aplikasi Organizer", icon: FiUsers },
   {
     href: "/dashboard/recommendation-test",
     label: "Uji Algoritma",
@@ -62,7 +61,7 @@ export function DashboardNavContent() {
               pathname === link.href
                 ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:bg-muted hover:text-primary",
-              link.disabled && "cursor-not-allowed opacity-50"
+              link.disabled && "cursor-not-allowed opacity-50",
             )}
             aria-disabled={link.disabled}
             onClick={(e) => link.disabled && e.preventDefault()}
@@ -82,7 +81,7 @@ export function DashboardNavContent() {
                   "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                   pathname === link.href
                     ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-muted hover:text-primary"
+                    : "text-muted-foreground hover:bg-muted hover:text-primary",
                 )}
               >
                 <link.icon className="h-4 w-4" />
