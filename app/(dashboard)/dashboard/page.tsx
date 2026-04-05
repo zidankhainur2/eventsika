@@ -6,9 +6,18 @@ import { useOrganizerEvents } from "@/lib/hooks/useEvents";
 export default function OrganizerDashboard() {
   const { events, isLoading } = useOrganizerEvents();
 
+  const now = new Date();
   const totalEvents = events.length;
+
+  // Hitung Event yang belum dimulai (waktu mulai masih di masa depan)
   const upcomingEvents = events.filter(
-    (event) => new Date(event.event_date) > new Date()
+    (event) => new Date(event.start_date) > now,
+  ).length;
+
+  // Hitung Event yang sedang berlangsung (waktu sekarang berada di antara start_date dan end_date)
+  const ongoingEvents = events.filter(
+    (event) =>
+      new Date(event.start_date) <= now && new Date(event.end_date) >= now,
   ).length;
 
   return (
@@ -30,6 +39,21 @@ export default function OrganizerDashboard() {
             </div>
           </CardContent>
         </Card>
+
+        {/* --- Card Baru: Event Berlangsung --- */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">
+              Event Berlangsung
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-primary">
+              {isLoading ? "..." : ongoingEvents}
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle className="text-sm font-medium">
@@ -42,6 +66,7 @@ export default function OrganizerDashboard() {
             </div>
           </CardContent>
         </Card>
+
         {/* Placeholder untuk analitik di masa depan */}
         <Card>
           <CardHeader>
@@ -50,7 +75,7 @@ export default function OrganizerDashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">--</div>
+            <div className="text-2xl font-bold text-muted-foreground">--</div>
           </CardContent>
         </Card>
       </div>

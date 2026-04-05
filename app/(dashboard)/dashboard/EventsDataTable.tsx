@@ -114,16 +114,53 @@ function EventActions({ event }: { event: Event }) {
   );
 }
 
-function getEventStatus(eventDate: string): {
+// Fungsi ini memformat tanggal agar ringkas di dalam tabel
+function formatTableDate(start: string, end: string) {
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+
+  const startStr = startDate.toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+  const endStr = endDate.toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+
+  if (startStr === endStr) {
+    return startStr; // Jika 1 hari, cukup tampilkan: 5 Okt 2025
+  }
+
+  // Jika beda hari, tampilkan rentang: 5 Okt - 7 Okt 2025
+  const startDayMonth = startDate.toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "short",
+  });
+  return `${startDayMonth} - ${endStr}`;
+}
+
+// Fungsi status yang lebih pintar (mendukung Berlangsung/Ongoing)
+function getEventStatus(
+  startDate: string,
+  endDate: string,
+): {
   text: string;
-  variant: "default" | "secondary" | "destructive";
+  variant: "default" | "secondary" | "destructive" | "outline";
 } {
   const now = new Date();
-  const date = new Date(eventDate);
-  if (date < now) {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+
+  if (now > end) {
     return { text: "Selesai", variant: "secondary" };
+  } else if (now >= start && now <= end) {
+    return { text: "Berlangsung", variant: "default" }; // Bisa diganti warnanya jika punya varian khusus
+  } else {
+    return { text: "Mendatang", variant: "outline" };
   }
-  return { text: "Mendatang", variant: "default" };
 }
 
 export default function EventsDataTable() {
@@ -169,16 +206,14 @@ export default function EventsDataTable() {
             </TableHeader>
             <TableBody>
               {events.map((event) => {
-                const status = getEventStatus(event.event_date);
+                // Gunakan start_date dan end_date
+                const status = getEventStatus(event.start_date, event.end_date);
                 return (
                   <TableRow key={event.id}>
                     <TableCell className="font-medium">{event.title}</TableCell>
                     <TableCell>
-                      {new Date(event.event_date).toLocaleDateString("id-ID", {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                      })}
+                      {/* Gunakan fungsi format yang baru */}
+                      {formatTableDate(event.start_date, event.end_date)}
                     </TableCell>
                     <TableCell>
                       <Badge variant={status.variant}>{status.text}</Badge>
@@ -197,7 +232,7 @@ export default function EventsDataTable() {
       {/* --- Tampilan Mobile (Card List) --- */}
       <div className="block md:hidden space-y-4">
         {events.map((event) => {
-          const status = getEventStatus(event.event_date);
+          const status = getEventStatus(event.start_date, event.end_date);
           return (
             <Card key={event.id} className="p-4">
               <div className="flex justify-between items-start">
@@ -206,11 +241,8 @@ export default function EventsDataTable() {
                   <div className="flex items-center gap-2 mt-2">
                     <Badge variant={status.variant}>{status.text}</Badge>
                     <span className="text-xs text-muted-foreground">
-                      {new Date(event.event_date).toLocaleDateString("id-ID", {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                      })}
+                      {/* Gunakan fungsi format yang baru */}
+                      {formatTableDate(event.start_date, event.end_date)}
                     </span>
                   </div>
                 </div>

@@ -9,6 +9,36 @@ import { type User } from "@supabase/supabase-js";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
+const formatEventDate = (start: string, end: string) => {
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+
+  const startDay = startDate.toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "short",
+  });
+  const endDay = endDate.toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "short",
+  });
+
+  // Jika hari dan bulan sama, tampilkan format: 5 Okt (09:00 - 15:00)
+  if (startDay === endDay) {
+    const startTime = startDate.toLocaleTimeString("id-ID", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    const endTime = endDate.toLocaleTimeString("id-ID", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    return `${startDay}, ${startTime} - ${endTime}`;
+  }
+
+  // Jika beda hari: 5 Okt - 7 Okt
+  return `${startDay} - ${endDay}`;
+};
+
 interface EventCardProps {
   event: Event;
   isSaved: boolean;
@@ -16,7 +46,6 @@ interface EventCardProps {
 }
 
 export default function EventCard({ event, isSaved, user }: EventCardProps) {
-  const eventDate = new Date(event.event_date);
 
   return (
     <div className="w-40 sm:w-full flex-shrink-0">
@@ -49,20 +78,11 @@ export default function EventCard({ event, isSaved, user }: EventCardProps) {
               {event.title}
             </Link>
           </CardTitle>
-          <div className="mt-auto space-y-1 pt-1">
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <FaCalendarAlt className="h-3 w-3 flex-shrink-0" />
-              <span className="truncate">
-                {eventDate.toLocaleDateString("id-ID", {
-                  day: "numeric",
-                  month: "short",
-                })}
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <FaMapMarkerAlt className="h-3 w-3 flex-shrink-0" />
-              <span className="truncate">{event.location}</span>
-            </div>
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <FaCalendarAlt className="h-3 w-3 flex-shrink-0" />
+            <span className="truncate">
+              {formatEventDate(event.start_date, event.end_date)}
+            </span>
           </div>
         </CardContent>
       </Card>

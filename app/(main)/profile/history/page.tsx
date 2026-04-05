@@ -9,13 +9,13 @@ const pastEvents = [
     id: "1",
     slug: "seminar-teknologi-ai",
     title: "Seminar Teknologi AI Masa Depan",
-    event_date: "2024-08-15T09:00:00.000Z",
+    end_date: "2024-08-15T09:00:00.000Z",
   },
   {
     id: "2",
     slug: "workshop-desain-grafis",
     title: "Workshop Desain Grafis untuk Pemula",
-    event_date: "2024-07-20T13:00:00.000Z",
+    end_date: "2024-07-20T13:00:00.000Z",
   },
 ];
 
@@ -48,7 +48,7 @@ export default function HistoryPage() {
                   </p>
                   <p className="text-sm text-text-secondary mt-1">
                     Diikuti pada:{" "}
-                    {new Date(event.event_date).toLocaleDateString("id-ID", {
+                    {new Date(event.end_date).toLocaleDateString("id-ID", {
                       day: "numeric",
                       month: "long",
                       year: "numeric",

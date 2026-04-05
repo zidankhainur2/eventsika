@@ -16,8 +16,8 @@ export const getAllUpcomingEvents = async ({
   let query = supabase
     .from("events")
     .select("*")
-    .gte("event_date", new Date().toISOString())
-    .order("event_date", { ascending: true });
+    .gte("end_date", new Date().toISOString())
+    .order("start_date", { ascending: true });
 
   if (search) {
     query = query.or(
@@ -132,7 +132,7 @@ export const getRelatedEvents = async (
     .select("*")
     .eq("category", category)
     .neq("id", currentEventId)
-    .gte("event_date", new Date().toISOString())
+    .gte("end_date", new Date().toISOString())
     .limit(3);
   if (error) {
     console.error("Error fetching related events:", error);

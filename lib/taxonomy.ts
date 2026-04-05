@@ -25,6 +25,7 @@ export const TOPIC_TAXONOMY: Record<string, string[]> = {
     "game development",
     "open source",
     "linux",
+    "otomotif",
   ],
   "Bisnis & Wirausaha": [
     "entrepreneurship",

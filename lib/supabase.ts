@@ -48,8 +48,8 @@ export async function getAllUpcomingEvents(
   let query = supabase
     .from("events")
     .select("*")
-    .gte("event_date", new Date().toISOString())
-    .order("event_date", { ascending: true });
+    .gte("end_date", new Date().toISOString())
+    .order("start_date", { ascending: true });
 
   if (search) {
     const searchTerm = `%${search}%`;

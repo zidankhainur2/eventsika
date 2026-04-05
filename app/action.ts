@@ -21,6 +21,21 @@ function parseInterests(raw: string | null | undefined): string[] {
     .filter(Boolean);
 }
 
+function appendWIBTimezone(dateTimeStr: string) {
+  if (!dateTimeStr) return dateTimeStr;
+  
+  // Input datetime-local biasanya berformat "YYYY-MM-DDTHH:mm" (16 karakter)
+  if (dateTimeStr.length === 16) {
+    return `${dateTimeStr}:00+07:00`; // Tambahkan detik dan zona waktu WIB (+07:00)
+  }
+  // Jika kebetulan sudah mengandung detik "YYYY-MM-DDTHH:mm:ss" (19 karakter)
+  if (dateTimeStr.length === 19) {
+    return `${dateTimeStr}+07:00`;
+  }
+  
+  return dateTimeStr;
+}
+
 async function verifySuperAdmin(supabase: ReturnType<typeof createClient>) {
   const {
     data: { user },
@@ -117,6 +132,17 @@ export async function addEvent(
 
   const title = formData.get("title") as string;
   const slug = slugify(title);
+  const rawStartDate = formData.get("start_date") as string;
+  const rawEndDate = formData.get("end_date") as string;
+  const startDate = formData.get("start_date") as string;
+  const endDate = formData.get("end_date") as string;
+
+  if (new Date(startDate) >= new Date(endDate)) {
+    return {
+      message: "Waktu selesai (end date) harus lebih dari waktu mulai.",
+      type: "error",
+    };
+  }
 
   const eventData = {
     title: title,
@@ -124,7 +150,8 @@ export async function addEvent(
     organizer: formData.get("organizer") as string,
     category: formData.get("category") as string,
     location: formData.get("location") as string,
-    event_date: formData.get("event_date") as string,
+    start_date: startDate,
+    end_date: endDate,
     description: formData.get("description") as string,
     registration_link: formData.get("registration_link") as string,
     image_url: publicUrl,
@@ -134,7 +161,7 @@ export async function addEvent(
     embedding: embedding,
   };
 
-  if (!eventData.title || !eventData.organizer || !eventData.event_date) {
+  if (!eventData.title || !eventData.organizer || !eventData.end_date) {
     return {
       message: "Field yang wajib diisi tidak boleh kosong.",
       type: "error",
@@ -228,6 +255,15 @@ export async function updateEvent(
 
   const title = formData.get("title") as string;
   const slug = slugify(title);
+  const startDate = formData.get("start_date") as string;
+  const endDate = formData.get("end_date") as string;
+
+  if (new Date(startDate) >= new Date(endDate)) {
+    return {
+      message: "Waktu selesai (end date) harus lebih dari waktu mulai.",
+      type: "error",
+    };
+  }
 
   const eventData = {
     title: title,
@@ -235,7 +271,8 @@ export async function updateEvent(
     organizer: formData.get("organizer") as string,
     category: formData.get("category") as string,
     location: formData.get("location") as string,
-    event_date: formData.get("event_date") as string,
+    start_date: startDate,
+    end_date: endDate,
     description: formData.get("description") as string,
     registration_link: formData.get("registration_link") as string,
     image_url: imageUrl,
@@ -814,8 +851,8 @@ export async function signOut() {
 export async function getVectorRecommendations(
   search?: string,
   category?: string,
-  weightSemantic: number = 0.8,
-  weightRule: number = 0.2,
+  weightSemantic: number = 0.5,
+  weightRule: number = 0.5,
 ): Promise<Event[]> {
   try {
     const supabase = createClient();

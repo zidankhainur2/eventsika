@@ -3,7 +3,8 @@ export type Event = {
   created_at: string;
   title: string;
   description: string;
-  event_date: string;
+  start_date: string;
+  end_date: string;
   location: string;
   organizer: string;
   category: string;
@@ -38,7 +39,8 @@ export type TestResultItem = {
   category: string;
   tags: string[] | null;
   target_majors: string[] | null;
-  event_date: string;
+  start_date: string;
+  end_date: string;
   vector_score: number;
   major_score: number;
   tag_score: number;

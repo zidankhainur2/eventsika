@@ -23,7 +23,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-// Pastikan path import ini sesuai dengan lokasi file komponenmu
 import { EventTagSelector } from "@/components/EventTagSelector";
 
 interface EventFormProps {
@@ -34,6 +33,17 @@ interface EventFormProps {
   event?: Event | null;
   buttonText: string;
 }
+
+const formatForDateTimeLocal = (dateString: string) => {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+
+  // Buat tanggal virtual dengan menggeser waktunya +7 jam
+  const wibTime = new Date(date.getTime() + 7 * 60 * 60 * 1000);
+
+  // Ambil format ISO-nya, potong bagian 'Z' dan detiknya agar menjadi "YYYY-MM-DDTHH:mm"
+  return wibTime.toISOString().slice(0, 16);
+};
 
 export default function EventForm({
   formAction,
@@ -209,15 +219,29 @@ export default function EventForm({
             defaultValue={event?.location}
           />
         </div>
-        <div className="grid w-full items-center gap-1.5">
-          <Label htmlFor="event_date">Tanggal & Waktu</Label>
-          <Input
-            type="datetime-local"
-            name="event_date"
-            id="event_date"
-            required
-            defaultValue={event ? formatDateTimeLocal(event.event_date) : ""}
-          />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid w-full items-center gap-1.5">
+            <Label htmlFor="start_date">Waktu Mulai</Label>
+            <Input
+              type="datetime-local"
+              name="start_date"
+              id="start_date"
+              required
+              defaultValue={
+                event ? formatForDateTimeLocal(event.start_date) : ""
+              }
+            />
+          </div>
+          <div className="grid w-full items-center gap-1.5">
+            <Label htmlFor="end_date">Waktu Selesai</Label>
+            <Input
+              type="datetime-local"
+              name="end_date"
+              id="end_date"
+              required
+              defaultValue={event ? formatForDateTimeLocal(event.end_date) : ""}
+            />
+          </div>
         </div>
         <div className="grid w-full items-center gap-1.5">
           <Label htmlFor="description">Deskripsi</Label>

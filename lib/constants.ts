@@ -4,52 +4,142 @@ export const CATEGORIES = [
   "Kompetisi",
   "Hiburan",
   "Festival",
+  "Oprec",
+  "Lainnya",
 ];
 
 export const TOPIC_TAXONOMY = {
   "Teknologi & IT": [
     "programming",
     "coding",
-    "AI",
+    "web development",
+    "mobile development",
+
+    "artificial intelligence",
     "machine learning",
-    "web",
-    "mobile",
-    "data",
+    "data science",
+
     "cybersecurity",
+    "cloud computing",
+    "IoT",
+    "blockchain",
+
+    "UI/UX",
+    "game development",
+    "open source",
+    "linux",
+
+    "otomotif",
   ],
+
   "Bisnis & Wirausaha": [
     "entrepreneurship",
     "startup",
     "marketing",
+    "digital marketing",
+
     "finance",
-    "wirausaha",
     "investasi",
+    "wirausaha",
+    "e-commerce",
+    "branding",
+
+    "business plan",
+    "pitch",
+    "manajemen",
+    "akuntansi",
   ],
-  "Seni & Kreativitas": [
-    "desain",
-    "fotografi",
+
+  "Akademik & Riset": [
+    "penelitian",
+    "riset",
+    "publikasi",
+    "jurnal",
+    "skripsi",
+    "thesis",
+
+    "seminar ilmiah",
+    "konferensi",
+    "lomba karya tulis",
+    "PKMP",
+    "PKMK",
+
+    "olimpiade",
+    "kompetisi akademik",
+  ],
+
+  "Seni & Budaya": [
     "musik",
+    "seni rupa",
+    "fotografi",
+    "videografi",
+    "desain grafis",
+
+    "teater",
+    "tari",
     "film",
-    "lukis",
+    "sastra",
     "budaya",
-    "dkv",
+    "pameran",
+    "pertunjukan",
   ],
+
   "Olahraga & Kesehatan": [
     "futsal",
     "basket",
+    "voli",
     "badminton",
-    "maraton",
+    "renang",
+    "atletik",
+
+    "esports",
+    "gaming",
+    "hiking",
+    "kesehatan mental",
+    "wellness",
     "yoga",
-    "kesehatan",
-    "gizi",
   ],
+
+  "Sosial & Lingkungan": [
+    "volunteering",
+    "komunitas",
+    "lingkungan hidup",
+    "sosial",
+
+    "bakti sosial",
+    "kemanusiaan",
+    "sustainability",
+    "go green",
+
+    "pemberdayaan masyarakat",
+  ],
+
   "Pengembangan Diri": [
     "leadership",
     "public speaking",
     "soft skills",
-    "career",
-    "beasiswa",
-    "manajemen waktu",
+    "career development",
+
+    "networking",
+    "mentoring",
+    "self-improvement",
+    "time management",
+
+    "komunikasi",
+    "workshop",
+    "pelatihan",
+  ],
+
+  Keagamaan: [
+    "rohani",
+    "kajian",
+    "Islam",
+    "keagamaan",
+    "pesantren",
+    "spiritual",
+
+    "dakwah",
+    "ibadah",
   ],
 } as const;
 
