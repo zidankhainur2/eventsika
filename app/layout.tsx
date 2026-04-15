@@ -6,6 +6,7 @@ import { ProgressBar } from "@/components/ProgressBar";
 import { Suspense } from "react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import Providers from "@/components/Providers";
+import { ToastProvider } from "@/components/ToastProvider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -86,6 +87,7 @@ export default function RootLayout({
         className={`${inter.variable} ${plusJakartaSans.variable} bg-background text-foreground flex flex-col min-h-screen`}
       >
         <Providers>
+          <ToastProvider />
           <Toaster position="top-center" richColors />
           <Suspense fallback={null}>
             <ProgressBar />

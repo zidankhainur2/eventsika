@@ -73,8 +73,8 @@ export default function RegisterPage() {
   };
 
   return (
-    <main className="flex items-center justify-center min-h-screen p-4 sm:p-6 lg:p-8">
-      <div className="w-full max-w-4xl grid md:grid-cols-2 rounded-2xl overflow-hidden shadow-2xl">
+    <main className="flex items-center justify-center min-h-screen p-4 sm:p-6 lg:p-8 bg-[#fff8f6] dark:bg-background font-sans transition-colors duration-300">
+      <div className="w-full max-w-4xl grid md:grid-cols-2 rounded-[2rem] overflow-hidden shadow-2xl bg-white dark:bg-card border border-stone-200 dark:border-border">
         {/* Kolom Kiri: Form */}
         <div className="p-8 sm:p-14 flex flex-col justify-center">
           <CardHeader className="text-left p-0 mb-8">
@@ -142,7 +142,11 @@ export default function RegisterPage() {
                 required
               />
             </div>
-            <Button type="submit" disabled={isLoading} className="w-full mt-6">
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="w-full mt-6 rounded-xl py-6 text-base font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform"
+            >
               {isLoading ? "Memproses..." : "Daftar Akun"}
             </Button>
           </form>

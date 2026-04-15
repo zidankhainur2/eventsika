@@ -70,25 +70,23 @@ export default function MobileMenu({
         )}
 
         <div className="flex-1 overflow-y-auto px-6 space-y-6 mt-4">
-          {/* Menu Saya (Hanya untuk user login) */}
+          {/* Menu Saya */}
           {user && (
             <div>
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+              <h3 className="text-xs font-bold text-stone-400 uppercase tracking-widest mb-3">
                 Menu Saya
               </h3>
               <div className="flex flex-col gap-1">
+                {/* UPDATE: rounded-xl dan padding lebih nyaman ditekan */}
                 <Link
                   href="/profile/saved-events"
-                  className="flex items-center gap-3 p-2 rounded-md text-foreground hover:bg-muted"
+                  className="flex items-center gap-3 p-3 rounded-xl text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-primary transition-colors font-medium"
                 >
-                  <FiHeart className="h-4 w-4" />
+                  <FiHeart className="h-5 w-5" />
                   <span>Event Tersimpan</span>
                 </Link>
-                <div
-                  className="flex items-center gap-3 p-2 rounded-md text-muted-foreground cursor-not-allowed"
-                  aria-disabled="true"
-                >
-                  <FiCalendar className="h-4 w-4" />
+                <div className="flex items-center gap-3 p-3 rounded-xl text-stone-400 cursor-not-allowed font-medium">
+                  <FiCalendar className="h-5 w-5" />
                   <span>Kalender</span>
                 </div>
               </div>
@@ -97,7 +95,7 @@ export default function MobileMenu({
 
           {/* Kategori */}
           <div>
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+            <h3 className="text-xs font-bold text-stone-400 uppercase tracking-widest mb-3">
               Kategori
             </h3>
             <div className="flex flex-col gap-1">
@@ -105,9 +103,9 @@ export default function MobileMenu({
                 <Link
                   key={cat}
                   href={`/?category=${cat}`}
-                  className="flex items-center gap-3 p-2 rounded-md text-foreground hover:bg-muted"
+                  className="flex items-center gap-3 p-3 rounded-xl text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-primary transition-colors font-medium"
                 >
-                  <FiBookOpen className="h-4 w-4" />
+                  <FiBookOpen className="h-5 w-5" />
                   <span>{cat}</span>
                 </Link>
               ))}
@@ -116,15 +114,15 @@ export default function MobileMenu({
 
           {/* Informasi */}
           <div>
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+            <h3 className="text-xs font-bold text-stone-400 uppercase tracking-widest mb-3">
               Informasi
             </h3>
             <div className="flex flex-col gap-1">
               <Link
                 href="/about"
-                className="flex items-center gap-3 p-2 rounded-md text-foreground hover:bg-muted"
+                className="flex items-center gap-3 p-3 rounded-xl text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-primary transition-colors font-medium"
               >
-                <FiInfo className="h-4 w-4" />
+                <FiInfo className="h-5 w-5" />
                 <span>Tentang Kami</span>
               </Link>
             </div>

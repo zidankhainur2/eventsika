@@ -1,4 +1,3 @@
-// components/AnimatedEventGrid.tsx
 "use client";
 
 import { type Event } from "@/lib/types";

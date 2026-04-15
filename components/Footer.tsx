@@ -6,7 +6,7 @@ import { FaInstagram, FaTwitter, FaLinkedin } from "react-icons/fa";
 
 export default function Footer() {
   return (
-    <footer className="bg-stone-950 text-white mt-auto">
+    <footer className="bg-stone-100 dark:bg-stone-950 text-stone-800 dark:text-white mt-auto transition-colors duration-300 border-t border-stone-200 dark:border-stone-900">
       <div className="w-full py-16 px-6 md:px-12 grid grid-cols-1 md:grid-cols-4 gap-12 max-w-7xl mx-auto">
         {/* Brand Column */}
         <div className="space-y-6 md:col-span-1">
@@ -26,26 +26,27 @@ export default function Footer() {
               Collegiate Curator
             </p>
           </div>
-          <p className="text-stone-400 leading-relaxed text-sm">
+          <p className="text-stone-600 dark:text-stone-400 leading-relaxed text-sm">
             Platform eksplorasi event mahasiswa nomor satu di UNSIKA. Hubungkan
             minatmu dengan kegiatan seru di kampus.
           </p>
           <div className="flex gap-3">
+            {/* UPDATE: Icon Button Style */}
             <a
               href="#"
-              className="w-10 h-10 rounded-xl bg-stone-900 flex items-center justify-center text-stone-400 hover:text-white hover:bg-primary transition-all"
+              className="w-10 h-10 rounded-xl bg-white dark:bg-stone-900 shadow-sm border border-stone-200 dark:border-stone-800 flex items-center justify-center text-stone-500 hover:text-white hover:bg-primary transition-all"
             >
-              <FaInstagram className="w-5 h-5" />
+              <FaInstagram className="w-4 h-4" />
             </a>
             <a
               href="#"
-              className="w-10 h-10 rounded-xl bg-stone-900 flex items-center justify-center text-stone-400 hover:text-white hover:bg-primary transition-all"
+              className="w-10 h-10 rounded-xl bg-white dark:bg-stone-900 shadow-sm border border-stone-200 dark:border-stone-800 flex items-center justify-center text-stone-500 hover:text-white hover:bg-primary transition-all"
             >
               <FaTwitter className="w-5 h-5" />
             </a>
             <a
               href="#"
-              className="w-10 h-10 rounded-xl bg-stone-900 flex items-center justify-center text-stone-400 hover:text-white hover:bg-primary transition-all"
+              className="w-10 h-10 rounded-xl bg-white dark:bg-stone-900 shadow-sm border border-stone-200 dark:border-stone-800 flex items-center justify-center text-stone-500 hover:text-white hover:bg-primary transition-all"
             >
               <FaLinkedin className="w-5 h-5" />
             </a>
@@ -54,14 +55,14 @@ export default function Footer() {
 
         {/* Links Column 1 */}
         <div className="space-y-6">
-          <h4 className="font-heading font-bold text-white uppercase tracking-wider text-sm">
+          <h4 className="font-heading font-bold text-stone-900 dark:text-white uppercase tracking-wider text-sm">
             Perusahaan
           </h4>
           <ul className="space-y-3 text-sm">
             <li>
               <Link
                 href="/about"
-                className="text-stone-400 hover:text-white hover:underline decoration-primary underline-offset-4 transition-all"
+                className="text-stone-600 dark:text-stone-400 hover:text-primary hover:underline decoration-primary underline-offset-4 transition-all"
               >
                 Tentang Kami
               </Link>
@@ -69,7 +70,7 @@ export default function Footer() {
             <li>
               <Link
                 href="#"
-                className="text-stone-400 hover:text-white hover:underline decoration-primary underline-offset-4 transition-all"
+                className="text-stone-600 dark:text-stone-400 hover:text-primary hover:underline decoration-primary underline-offset-4 transition-all"
               >
                 Hubungi Kami
               </Link>
@@ -77,7 +78,7 @@ export default function Footer() {
             <li>
               <Link
                 href="#"
-                className="text-stone-400 hover:text-white hover:underline decoration-primary underline-offset-4 transition-all"
+                className="text-stone-600 dark:text-stone-400 hover:text-primary hover:underline decoration-primary underline-offset-4 transition-all"
               >
                 Kebijakan Privasi
               </Link>
@@ -85,7 +86,7 @@ export default function Footer() {
             <li>
               <Link
                 href="#"
-                className="text-stone-400 hover:text-white hover:underline decoration-primary underline-offset-4 transition-all"
+                className="text-stone-600 dark:text-stone-400 hover:text-primary hover:underline decoration-primary underline-offset-4 transition-all"
               >
                 Syarat & Ketentuan
               </Link>
@@ -95,14 +96,14 @@ export default function Footer() {
 
         {/* Links Column 2 */}
         <div className="space-y-6">
-          <h4 className="font-heading font-bold text-white uppercase tracking-wider text-sm">
+          <h4 className="font-heading font-bold text-stone-900 dark:text-white uppercase tracking-wider text-sm">
             Kategori Favorit
           </h4>
           <ul className="space-y-3 text-sm">
             <li>
               <Link
                 href="/?category=Seminar"
-                className="text-stone-400 hover:text-white hover:underline decoration-primary underline-offset-4 transition-all"
+                className="text-stone-600 dark:text-stone-400 hover:text-primary hover:underline decoration-primary underline-offset-4 transition-all"
               >
                 Seminar
               </Link>
@@ -110,7 +111,7 @@ export default function Footer() {
             <li>
               <Link
                 href="/?category=Kompetisi"
-                className="text-stone-400 hover:text-white hover:underline decoration-primary underline-offset-4 transition-all"
+                className="text-stone-600 dark:text-stone-400 hover:text-primary hover:underline decoration-primary underline-offset-4 transition-all"
               >
                 Kompetisi
               </Link>
@@ -118,7 +119,7 @@ export default function Footer() {
             <li>
               <Link
                 href="/?category=Hiburan"
-                className="text-stone-400 hover:text-white hover:underline decoration-primary underline-offset-4 transition-all"
+                className="text-stone-600 dark:text-stone-400 hover:text-primary hover:underline decoration-primary underline-offset-4 transition-all"
               >
                 Hiburan
               </Link>
@@ -126,7 +127,7 @@ export default function Footer() {
             <li>
               <Link
                 href="/?category=Festival"
-                className="text-stone-400 hover:text-white hover:underline decoration-primary underline-offset-4 transition-all"
+                className="text-stone-600 dark:text-stone-400 hover:text-primary hover:underline decoration-primary underline-offset-4 transition-all"
               >
                 Festival
               </Link>
@@ -136,7 +137,7 @@ export default function Footer() {
 
         {/* Newsletter Column */}
         <div className="space-y-6">
-          <h4 className="font-heading font-bold text-white uppercase tracking-wider text-sm">
+          <h4 className="font-heading font-bold text-stone-900 dark:text-white uppercase tracking-wider text-sm">
             Dapatkan Update
           </h4>
           <p className="text-stone-400 text-sm">
@@ -159,7 +160,7 @@ export default function Footer() {
       </div>
 
       {/* Bottom Bar */}
-      <div className="w-full py-6 px-6 border-t border-stone-900 text-center text-stone-500 text-sm">
+      <div className="w-full py-6 px-6 border-t border-stone-200 dark:border-stone-900 text-center text-stone-500 text-sm">
         <p>
           &copy; {new Date().getFullYear()} EventSika. Dirancang khusus untuk
           mahasiswa UNSIKA.

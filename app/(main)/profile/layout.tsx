@@ -32,7 +32,7 @@ export default function ProfileLayout({
     navLinks.find((link) => link.href === pathname)?.label || navLinks[0].label;
 
   return (
-    <main className="py-8 sm:py-12 px-4 sm:px-6">
+    <main className="py-8 sm:py-12 px-4 sm:px-6 min-h-screen bg-[#fff8f6] dark:bg-background font-sans transition-colors duration-300">
       <div className="max-w-4xl mx-auto">
         {/* Desktop Navigation - Tabs */}
         <div className="hidden md:block">
@@ -66,7 +66,9 @@ export default function ProfileLayout({
           </Select>
         </div>
 
-        <Card className="mt-6 p-4 sm:p-6">{children}</Card>
+        <Card className="mt-6 p-4 sm:p-6 bg-white dark:bg-card border border-stone-200 dark:border-border rounded-3xl shadow-xl shadow-stone-200/20 dark:shadow-none">
+          {children}
+        </Card>
       </div>
     </main>
   );

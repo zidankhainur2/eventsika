@@ -20,8 +20,8 @@ export default async function Navbar() {
     : { data: null };
 
   return (
-    // Background di-update mengikuti warm UI
-    <header className="sticky top-0 z-50 w-full bg-[#fff8f6]/90 dark:bg-background/90 backdrop-blur-md border-b border-stone-200 dark:border-border transition-colors duration-300">
+    // UPDATE: backdrop-blur-lg dan bg transparan 80 agar efek kaca lebih terasa premium
+    <header className="sticky top-0 z-50 w-full bg-[#fff8f6]/80 dark:bg-background/80 backdrop-blur-lg border-b border-stone-200 dark:border-border transition-colors duration-300">
       <nav className="relative max-w-7xl mx-auto flex h-16 items-center justify-between gap-4 px-6 md:px-12">
         {/* Kiri */}
         <div className="flex flex-1 items-center gap-2 md:flex-none">
@@ -71,7 +71,7 @@ export default async function Navbar() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="rounded-full hover:bg-stone-200 dark:hover:bg-stone-800"
+                  className="rounded-full hover:bg-stone-200 dark:hover:bg-stone-800 transition-colors"
                   asChild
                 >
                   <Link href="/profile/saved-events">
@@ -81,7 +81,7 @@ export default async function Navbar() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="rounded-full hover:bg-stone-200 dark:hover:bg-stone-800"
+                  className="rounded-full hover:bg-stone-200 dark:hover:bg-stone-800 transition-colors"
                   disabled
                 >
                   <FiCalendar className="h-5 w-5 text-stone-600 dark:text-stone-300" />
@@ -92,7 +92,7 @@ export default async function Navbar() {
           ) : (
             <Button
               asChild
-              className="rounded-full font-semibold px-6 shadow-md"
+              className="rounded-full font-semibold px-6 shadow-md shadow-primary/20 hover:scale-105 transition-transform"
             >
               <Link href="/login">Login</Link>
             </Button>
@@ -100,8 +100,8 @@ export default async function Navbar() {
         </div>
       </nav>
 
-      {/* Search Bar Mobile */}
-      <div className="border-b border-stone-200 dark:border-border bg-[#fff8f6] dark:bg-background px-4 pb-4 md:hidden">
+      {/* Search Bar Mobile - Tetap serasi warnanya */}
+      <div className="border-b border-stone-200 dark:border-border bg-[#fff8f6] dark:bg-background px-4 pb-4 md:hidden transition-colors duration-300">
         <Searchbar />
       </div>
     </header>
