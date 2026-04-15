@@ -8,9 +8,8 @@ export default function CategoryFilters() {
   const pathname = usePathname();
   const { replace } = useRouter();
 
-  // Ambil kategori aktif dari URL dan ubah menjadi Set untuk kemudahan manipulasi
   const activeCategories = new Set(
-    searchParams.get("category")?.split(",") || []
+    searchParams.get("category")?.split(",") || [],
   );
 
   const handleCategoryChange = (category: string) => {
@@ -29,46 +28,47 @@ export default function CategoryFilters() {
       params.delete("category");
     }
 
-    replace(`${pathname}?${params.toString()}`);
+    replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
-  // 🔹 Fungsi untuk menghapus semua filter
   const handleClearFilters = () => {
     const params = new URLSearchParams(searchParams);
-    params.delete("category"); // hapus parameter kategori dari URL
-    replace(`${pathname}?${params.toString()}`);
+    params.delete("category");
+    replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
   return (
-    <section className="my-8">
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 -mx-4 px-4">
+    <div className="w-full">
+      <div className="flex items-center gap-3 overflow-x-auto no-scrollbar pb-2">
+        {/* Tombol Reset "All" */}
+        <button
+          onClick={handleClearFilters}
+          className={`px-6 py-2.5 rounded-full text-sm font-semibold whitespace-nowrap transition-all ${
+            activeCategories.size === 0
+              ? "bg-primary text-white shadow-md shadow-primary/20"
+              : "bg-stone-200/60 dark:bg-stone-800 text-stone-600 dark:text-stone-300 hover:bg-stone-300 dark:hover:bg-stone-700"
+          }`}
+        >
+          Semua
+        </button>
+
         {CATEGORIES.map((cat) => {
           const isActive = activeCategories.has(cat);
           return (
             <button
               key={cat}
               onClick={() => handleCategoryChange(cat)}
-              className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors whitespace-nowrap ${
+              className={`px-6 py-2.5 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 ${
                 isActive
-                  ? "bg-primary text-white"
-                  : "bg-white text-neutral-dark hover:bg-gray-200"
+                  ? "bg-primary text-white shadow-md shadow-primary/20 scale-105"
+                  : "bg-stone-200/60 dark:bg-stone-800 text-stone-600 dark:text-stone-300 hover:bg-stone-300 dark:hover:bg-stone-700"
               }`}
             >
               {cat}
             </button>
           );
         })}
-
-        {/* 🔹 Tombol Clear Filter muncul hanya jika ada filter aktif */}
-        {activeCategories.size > 0 && (
-          <button
-            onClick={handleClearFilters}
-            className="ml-2 px-4 py-2 text-sm font-semibold rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors whitespace-nowrap"
-          >
-            Hapus Filter
-          </button>
-        )}
       </div>
-    </section>
+    </div>
   );
 }

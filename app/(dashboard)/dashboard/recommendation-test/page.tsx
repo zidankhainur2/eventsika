@@ -3,15 +3,10 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { FiPlay, FiLoader, FiDownload } from "react-icons/fi";
+import { FiPlay, FiLoader, FiDownload, FiDatabase } from "react-icons/fi";
 
-import {
-  type Profile,
-  type RecommendationTestResult,
-  type EvaluationResult,
-} from "@/lib/types";
-import { evaluateScenario } from "@/lib/metrics";
-import { runRecommendationTest } from "@/app/action";
+import { type Profile, type RecommendationTestResult } from "@/lib/types";
+import { runRecommendationTest, bulkExportRecommendations } from "@/app/action";
 import { getAllProfiles } from "@/lib/queries";
 
 import { Button } from "@/components/ui/button";
@@ -40,6 +35,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+
+// ── Konstanta skenario ────────────────────────────────────────────────────────
 
 const SCENARIOS = [
   {
@@ -79,7 +76,11 @@ const SCENARIOS = [
   },
 ];
 
+// ── Helper ────────────────────────────────────────────────────────────────────
+
 const fmt = (n?: number) => (n == null || isNaN(n) ? "0.000" : n.toFixed(3));
+
+// ── Komponen utama ────────────────────────────────────────────────────────────
 
 export default function RecommendationTestPage() {
   const [selectedUserId, setSelectedUserId] = useState("");
@@ -87,11 +88,16 @@ export default function RecommendationTestPage() {
   const [testResult, setTestResult] = useState<RecommendationTestResult | null>(
     null,
   );
+  const [isBulkExporting, setIsBulkExporting] = useState(false);
+
+  // ── Query: semua profil ─────────────────────────────────────────────────────
 
   const { data: profiles, isLoading: isLoadingProfiles } = useQuery<Profile[]>({
     queryKey: ["allProfiles"],
     queryFn: getAllProfiles,
   });
+
+  // ── Mutation: uji satu user + satu skenario ─────────────────────────────────
 
   const { mutate: runTest, isPending } = useMutation({
     mutationFn: () =>
@@ -108,6 +114,8 @@ export default function RecommendationTestPage() {
       toast.error("Test gagal", { description: (e as Error).message }),
   });
 
+  // ── Handler: jalankan uji per-user ──────────────────────────────────────────
+
   const handleRun = () => {
     if (!selectedUserId) {
       toast.warning("Pilih pengguna terlebih dahulu.");
@@ -116,8 +124,9 @@ export default function RecommendationTestPage() {
     runTest();
   };
 
-  // Export hasil ke CSV untuk dianalisis offline
-  const handleExport = () => {
+  // ── Handler: export CSV per-user (skenario aktif) ───────────────────────────
+
+  const handleExportSingle = () => {
     if (!testResult?.recommendations.length) return;
 
     const header =
@@ -146,8 +155,44 @@ export default function RecommendationTestPage() {
     URL.revokeObjectURL(url);
   };
 
+  // ── Handler: bulk export semua user × semua skenario ───────────────────────
+
+  const handleBulkExport = async () => {
+    setIsBulkExporting(true);
+    toast.info("Memulai bulk export...", {
+      description:
+        "Proses ini mungkin memakan waktu 5–15 menit tergantung jumlah user. Jangan tutup halaman ini.",
+      duration: 10000,
+    });
+
+    try {
+      const csv = await bulkExportRecommendations();
+
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `bulk_export_semua_skenario_${Date.now()}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      toast.success("Bulk export selesai!", {
+        description: "File CSV berhasil diunduh.",
+      });
+    } catch (e) {
+      toast.error("Bulk export gagal", {
+        description: (e as Error).message,
+      });
+    } finally {
+      setIsBulkExporting(false);
+    }
+  };
+
+  // ── Render ──────────────────────────────────────────────────────────────────
+
   return (
     <div className="space-y-6">
+      {/* Judul halaman */}
       <div>
         <h1 className="text-3xl font-heading font-bold">
           Uji Algoritma Rekomendasi
@@ -158,10 +203,17 @@ export default function RecommendationTestPage() {
         </p>
       </div>
 
-      {/* Kontrol */}
+      {/* ── Panel kontrol ── */}
       <Card>
-        <CardContent className="pt-6 space-y-6">
-          {/* Pilih Skenario */}
+        <CardHeader>
+          <CardTitle className="text-base">Pengujian Per-User</CardTitle>
+          <CardDescription>
+            Pilih skenario dan pengguna, lalu jalankan untuk melihat hasil
+            rekomendasi secara individual.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Pilih skenario */}
           <div className="space-y-2">
             <Label>Skenario Pembobotan (α : β)</Label>
             <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
@@ -179,7 +231,7 @@ export default function RecommendationTestPage() {
             </div>
           </div>
 
-          {/* Pilih User + Tombol Run */}
+          {/* Pilih user + tombol jalankan */}
           <div className="flex flex-col sm:flex-row gap-4 items-end">
             <div className="flex-1">
               <Label htmlFor="user-select">Pilih Pengguna</Label>
@@ -216,9 +268,12 @@ export default function RecommendationTestPage() {
                 )}
                 Jalankan
               </Button>
-              {testResult && (
-                <Button variant="outline" onClick={handleExport}>
-                  <FiDownload className="mr-2" /> Export CSV
+
+              {/* Export CSV untuk hasil per-user yang sedang ditampilkan */}
+              {testResult && !isPending && (
+                <Button variant="outline" onClick={handleExportSingle}>
+                  <FiDownload className="mr-2" />
+                  Export CSV
                 </Button>
               )}
             </div>
@@ -226,7 +281,54 @@ export default function RecommendationTestPage() {
         </CardContent>
       </Card>
 
-      {/* Hasil */}
+      {/* ── Panel bulk export ── */}
+      <Card className="border-primary/30 bg-primary/5">
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <FiDatabase className="h-4 w-4 text-primary" />
+            Bulk Export untuk Evaluasi Python
+          </CardTitle>
+          <CardDescription>
+            Export rekomendasi <strong>semua user × semua 5 skenario</strong>{" "}
+            sekaligus dalam satu file CSV. Gunakan file ini sebagai input script
+            evaluasi Python. Proses mungkin memakan waktu 5–15 menit — jalankan
+            dari localhost, bukan dari Vercel.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div className="text-sm text-muted-foreground space-y-1">
+              <p>
+                Format output:{" "}
+                <code className="text-xs bg-muted px-1 py-0.5 rounded">
+                  user_id, full_name, major, scenario, rank, event_id, title,
+                  vector_score, rule_score, total_score
+                </code>
+              </p>
+              <p>Jangan tutup halaman selama proses berlangsung.</p>
+            </div>
+            <Button
+              onClick={handleBulkExport}
+              disabled={isBulkExporting}
+              className="shrink-0"
+            >
+              {isBulkExporting ? (
+                <>
+                  <FiLoader className="mr-2 animate-spin" />
+                  Memproses...
+                </>
+              ) : (
+                <>
+                  <FiDatabase className="mr-2" />
+                  Bulk Export Semua Skenario
+                </>
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ── Tabel hasil per-user ── */}
       {testResult && !isPending && (
         <Card>
           <CardHeader>
@@ -284,6 +386,7 @@ export default function RecommendationTestPage() {
                             ))}
                           </div>
                         </TableCell>
+
                         {/* Semantic score */}
                         <TableCell
                           className={cn(
@@ -295,6 +398,7 @@ export default function RecommendationTestPage() {
                         >
                           {fmt(r.vector_score)}
                         </TableCell>
+
                         {/* Major score */}
                         <TableCell
                           className={cn(
@@ -308,6 +412,7 @@ export default function RecommendationTestPage() {
                         >
                           {fmt(r.major_score)}
                         </TableCell>
+
                         {/* Tag score */}
                         <TableCell
                           className={cn(
@@ -319,10 +424,12 @@ export default function RecommendationTestPage() {
                         >
                           {fmt(r.tag_score)}
                         </TableCell>
+
                         {/* Rule score */}
                         <TableCell className="text-center font-mono text-sm text-orange-600">
                           {fmt(r.rule_score)}
                         </TableCell>
+
                         {/* Total score */}
                         <TableCell className="text-center font-mono font-bold text-lg text-primary">
                           {fmt(r.total_score)}

@@ -7,7 +7,7 @@
     /* ========================================
        Variabel Warna Kustom EventSika
        ======================================== */
-    --font-heading: "Fredoka", sans-serif;
+    --font-heading: "Plus Jakarta Sans", sans-serif; /* Update font */
     --font-body: "Inter", sans-serif;
 
     /* Warna Utama kita dalam format HSL */
@@ -107,7 +107,9 @@ body {
 }
 
 #nprogress .peg {
-  box-shadow: 0 0 10px #ffd700, 0 0 5px #ffd700 !important;
+  box-shadow:
+    0 0 10px #ffd700,
+    0 0 5px #ffd700 !important;
 }
 
 #nprogress .spinner-icon {
@@ -141,4 +143,12 @@ body {
   body {
     @apply bg-background text-foreground;
   }
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

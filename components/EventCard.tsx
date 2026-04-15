@@ -3,40 +3,13 @@
 import Link from "next/link";
 import Image from "next/image";
 import { type Event } from "@/lib/types";
-import { FaCalendarAlt, FaMapMarkerAlt } from "react-icons/fa";
+import { FaCalendarAlt } from "react-icons/fa";
 import SaveEventButton from "./SaveEventButton";
 import { type User } from "@supabase/supabase-js";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 
-const formatEventDate = (start: string, end: string) => {
-  const startDate = new Date(start);
-  const endDate = new Date(end);
-
-  const startDay = startDate.toLocaleDateString("id-ID", {
-    day: "numeric",
-    month: "short",
-  });
-  const endDay = endDate.toLocaleDateString("id-ID", {
-    day: "numeric",
-    month: "short",
-  });
-
-  // Jika hari dan bulan sama, tampilkan format: 5 Okt (09:00 - 15:00)
-  if (startDay === endDay) {
-    const startTime = startDate.toLocaleTimeString("id-ID", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-    const endTime = endDate.toLocaleTimeString("id-ID", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-    return `${startDay}, ${startTime} - ${endTime}`;
-  }
-
-  // Jika beda hari: 5 Okt - 7 Okt
-  return `${startDay} - ${endDay}`;
+const formatEventDateStr = (start: string) => {
+  const date = new Date(start);
+  return `${date.getDate()} ${date.toLocaleDateString("id-ID", { month: "short" })} • ${date.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} WIB`;
 };
 
 interface EventCardProps {
@@ -46,46 +19,60 @@ interface EventCardProps {
 }
 
 export default function EventCard({ event, isSaved, user }: EventCardProps) {
+  // Fallback category jika database belum punya kolom kategori spesifik
+  const categoryTag = event.category || "EVENT KAMPUS";
 
   return (
-    <div className="w-40 sm:w-full flex-shrink-0">
-      <Card className="flex h-full flex-col overflow-hidden transition-all duration-300 hover:bg-muted/80 group border-border">
-        <CardHeader className="p-0 relative">
-          <Link href={`/event/${event.slug}`} className="block aspect-square">
+    <div className="w-[280px] sm:w-full flex-shrink-0 group">
+      <div className="bg-white dark:bg-card rounded-2xl overflow-hidden border border-gray-100 dark:border-border shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 flex flex-col h-full relative">
+        {/* Gambar & Badges */}
+        <div className="h-48 overflow-hidden relative">
+          <Link href={`/event/${event.slug}`} className="block w-full h-full">
             <Image
               src={event.image_url || "/hero-bg.webp"}
-              alt={`Poster for ${event.title}`}
+              alt={event.title}
               fill
-              sizes="(max-width: 640px) 40vw, 100vw"
-              className="object-cover transition-transform duration-300 group-hover:scale-105"
+              sizes="(max-width: 640px) 100vw, 300px"
+              className="object-cover group-hover:scale-110 transition-transform duration-700"
             />
           </Link>
-          <div className="absolute top-2 right-2">
+
+          {/* Badge Kategori Melayang Kiri */}
+          <span className="absolute top-3 left-3 bg-primary text-white text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider shadow-sm">
+            {categoryTag}
+          </span>
+
+          {/* Tombol Bookmark Kanan */}
+          <div className="absolute top-2 right-2 bg-white/80 dark:bg-black/50 backdrop-blur rounded-full p-1 shadow-sm">
             <SaveEventButton
               eventId={event.id}
               isSavedInitial={isSaved}
               user={user}
             />
           </div>
-        </CardHeader>
+        </div>
 
-        <CardContent className="p-3 flex-grow flex flex-col">
-          <CardTitle className="font-heading text-base leading-snug line-clamp-2 mb-2">
-            <Link
-              href={`/event/${event.slug}`}
-              className="hover:text-primary transition-colors"
-            >
-              {event.title}
+        {/* Konten Detail */}
+        <div className="p-5 flex flex-col flex-grow justify-between gap-4">
+          <div className="space-y-2">
+            <Link href={`/event/${event.slug}`}>
+              <h3 className="font-bold text-lg leading-tight text-gray-900 dark:text-white group-hover:text-primary transition-colors line-clamp-2">
+                {event.title}
+              </h3>
             </Link>
-          </CardTitle>
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <FaCalendarAlt className="h-3 w-3 flex-shrink-0" />
-            <span className="truncate">
-              {formatEventDate(event.start_date, event.end_date)}
-            </span>
           </div>
-        </CardContent>
-      </Card>
+
+          <div className="flex items-end justify-between mt-auto border-t border-gray-50 dark:border-border/50 pt-3">
+            <div className="flex items-center gap-2 text-xs font-medium text-gray-500 dark:text-gray-400">
+              <FaCalendarAlt className="text-primary/60" />
+              <span>{formatEventDateStr(event.start_date)}</span>
+            </div>
+
+            {/* Tampilan Harga/Status (Bisa disesuaikan logicnya dengan data DB) */}
+            <span className="text-primary font-bold text-sm">Cek Detail</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

@@ -20,10 +20,10 @@ export default async function Navbar() {
     : { data: null };
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur-sm md:border-b md:border-border">
-      {/* Navigasi Utama */}
-      <nav className="relative max-w-6xl mx-auto flex h-16 items-center justify-between gap-4 px-4">
-        {/* Kiri: Hamburger (Mobile) / Logo (Desktop) */}
+    // Background di-update mengikuti warm UI
+    <header className="sticky top-0 z-50 w-full bg-[#fff8f6]/90 dark:bg-background/90 backdrop-blur-md border-b border-stone-200 dark:border-border transition-colors duration-300">
+      <nav className="relative max-w-7xl mx-auto flex h-16 items-center justify-between gap-4 px-6 md:px-12">
+        {/* Kiri */}
         <div className="flex flex-1 items-center gap-2 md:flex-none">
           <div className="md:hidden">
             <MobileMenuContainer
@@ -31,23 +31,23 @@ export default async function Navbar() {
               profile={profile as Profile | null}
             />
           </div>
-          <Link href="/" className="hidden items-center gap-2 md:flex">
+          <Link href="/" className="hidden items-center gap-3 md:flex group">
             <Image
               src="/eventsika-logo.png"
               alt="EventSika Logo"
               width={32}
               height={32}
-              className="h-8 w-8"
+              className="h-8 w-8 group-hover:scale-110 transition-transform"
             />
-            <span className="hidden font-heading text-xl font-bold text-primary sm:block">
+            <span className="hidden font-heading text-2xl font-extrabold text-primary sm:block tracking-tight">
               EventSika
             </span>
           </Link>
         </div>
 
-        {/* Tengah: Logo (Mobile) / Search (Desktop) */}
+        {/* Tengah: Mobile Logo / Desktop Search */}
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 md:hidden">
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/">
             <Image
               src="/eventsika-logo.png"
               alt="EventSika Logo"
@@ -58,39 +58,50 @@ export default async function Navbar() {
           </Link>
         </div>
         <div className="hidden flex-1 justify-center px-4 md:flex">
-          <div className="w-full max-w-md">
+          <div className="w-full max-w-xl">
             <Searchbar />
           </div>
         </div>
 
-        {/* Kanan: Aksi Pengguna */}
-        <div className="flex flex-1 items-center justify-end gap-1 md:gap-2">
+        {/* Kanan */}
+        <div className="flex flex-1 items-center justify-end gap-2 md:gap-4">
           {user ? (
             <>
-              <div className="hidden items-center md:flex">
-                <Button variant="ghost" size="icon" asChild>
+              <div className="hidden items-center md:flex gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full hover:bg-stone-200 dark:hover:bg-stone-800"
+                  asChild
+                >
                   <Link href="/profile/saved-events">
-                    <FiHeart className="h-5 w-5" />
-                    <span className="sr-only">Event Tersimpan</span>
+                    <FiHeart className="h-5 w-5 text-stone-600 dark:text-stone-300" />
                   </Link>
                 </Button>
-                <Button variant="ghost" size="icon" disabled>
-                  <FiCalendar className="h-5 w-5" />
-                  <span className="sr-only">Kalender Event</span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full hover:bg-stone-200 dark:hover:bg-stone-800"
+                  disabled
+                >
+                  <FiCalendar className="h-5 w-5 text-stone-600 dark:text-stone-300" />
                 </Button>
               </div>
               <UserMenu user={user} profile={profile as Profile | null} />
             </>
           ) : (
-            <Button asChild>
+            <Button
+              asChild
+              className="rounded-full font-semibold px-6 shadow-md"
+            >
               <Link href="/login">Login</Link>
             </Button>
           )}
         </div>
       </nav>
 
-      {/* Search Bar untuk Mobile */}
-      <div className="border-b border-border bg-background px-4 pb-3 md:hidden">
+      {/* Search Bar Mobile */}
+      <div className="border-b border-stone-200 dark:border-border bg-[#fff8f6] dark:bg-background px-4 pb-4 md:hidden">
         <Searchbar />
       </div>
     </header>

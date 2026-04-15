@@ -23,7 +23,7 @@ function parseInterests(raw: string | null | undefined): string[] {
 
 function appendWIBTimezone(dateTimeStr: string) {
   if (!dateTimeStr) return dateTimeStr;
-  
+
   // Input datetime-local biasanya berformat "YYYY-MM-DDTHH:mm" (16 karakter)
   if (dateTimeStr.length === 16) {
     return `${dateTimeStr}:00+07:00`; // Tambahkan detik dan zona waktu WIB (+07:00)
@@ -32,7 +32,7 @@ function appendWIBTimezone(dateTimeStr: string) {
   if (dateTimeStr.length === 19) {
     return `${dateTimeStr}+07:00`;
   }
-  
+
   return dateTimeStr;
 }
 
@@ -134,8 +134,8 @@ export async function addEvent(
   const slug = slugify(title);
   const rawStartDate = formData.get("start_date") as string;
   const rawEndDate = formData.get("end_date") as string;
-  const startDate = formData.get("start_date") as string;
-  const endDate = formData.get("end_date") as string;
+  const startDate = appendWIBTimezone(rawStartDate);
+  const endDate = appendWIBTimezone(rawEndDate);
 
   if (new Date(startDate) >= new Date(endDate)) {
     return {
@@ -996,4 +996,72 @@ export async function runRecommendationTest(
   if (rpcError) throw new Error(`RPC gagal: ${rpcError.message}`);
 
   return { profile, recommendations: recommendations ?? [] };
+}
+
+export async function bulkExportRecommendations(): Promise<string> {
+  const supabase = createClient();
+
+  // 1. Ambil semua profil user
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id, full_name, major, interests")
+    .not("interests", "is", null)
+    .not("major", "is", null);
+
+  if (!profiles?.length) throw new Error("Tidak ada profil ditemukan.");
+
+  const SCENARIOS = [
+    { id: "S1", alpha: 1.0, beta: 0.0 },
+    { id: "S2", alpha: 0.8, beta: 0.2 },
+    { id: "S3", alpha: 0.5, beta: 0.5 },
+    { id: "S4", alpha: 0.2, beta: 0.8 },
+    { id: "S5", alpha: 0.0, beta: 1.0 },
+  ];
+
+  const rows: string[] = [];
+  // Header
+  rows.push(
+    "user_id,full_name,major,scenario,rank,event_id,title,vector_score,rule_score,total_score",
+  );
+
+  for (const profile of profiles) {
+    const parentInterests = parseInterests(profile.interests);
+    const expandedTags = getChildTagsForInterests(parentInterests);
+    const interestText = buildInterestText(parentInterests);
+    const vector = await generateEmbedding(interestText);
+
+    if (!vector) continue;
+
+    for (const scenario of SCENARIOS) {
+      const { data: recs } = await supabase.rpc("evaluate_recommendations", {
+        query_embedding: vector,
+        p_user_id: profile.id,
+        p_user_major: profile.major,
+        p_user_interests: expandedTags,
+        p_weight_semantic: scenario.alpha,
+        p_weight_rule: scenario.beta,
+        p_threshold: 0.0,
+        match_count: 50,
+      });
+
+      (recs ?? []).forEach((r: any, i: number) => {
+        rows.push(
+          [
+            profile.id,
+            `"${profile.full_name}"`,
+            `"${profile.major}"`,
+            scenario.id,
+            i + 1,
+            r.id,
+            `"${r.title.replace(/"/g, '""')}"`,
+            r.vector_score?.toFixed(4) ?? "0",
+            r.rule_score?.toFixed(4) ?? "0",
+            r.total_score?.toFixed(4) ?? "0",
+          ].join(","),
+        );
+      });
+    }
+  }
+
+  return rows.join("\n");
 }

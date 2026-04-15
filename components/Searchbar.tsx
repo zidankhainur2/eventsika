@@ -1,4 +1,3 @@
-// components/Searchbar.tsx
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -22,14 +21,14 @@ export default function Searchbar() {
   }, 300);
 
   return (
-    <div className="relative w-full max-w-xs lg:max-w-md">
-      <FiSearch className="absolute top-1/2 -translate-y-1/2 left-3 text-gray-400" />
+    <div className="relative w-full">
+      <FiSearch className="absolute top-1/2 -translate-y-1/2 left-4 text-stone-400 text-lg" />
       <Input
         type="text"
-        placeholder="Cari event..."
+        placeholder="Cari event, workshop, atau kompetisi..."
         onChange={(e) => handleSearch(e.target.value)}
         defaultValue={searchParams.get("search")?.toString()}
-        className="pl-10 !py-2 !mt-0"
+        className="pl-12 py-5 rounded-full bg-white dark:bg-stone-900 border-stone-200 dark:border-stone-800 shadow-sm hover:border-primary/50 focus-visible:ring-primary focus-visible:ring-offset-0 text-sm font-medium transition-colors"
       />
     </div>
   );
