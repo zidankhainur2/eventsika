@@ -244,14 +244,16 @@ export default function RecommendationTestPage() {
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  {profiles?.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.full_name || "Tanpa Nama"}{" "}
-                      <span className="text-muted-foreground text-xs ml-1">
-                        ({p.major || "Tanpa Jurusan"})
-                      </span>
-                    </SelectItem>
-                  ))}
+                  {profiles
+                    ?.filter((p) => p.role === "user")
+                    .map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.full_name || "Tanpa Nama"}{" "}
+                        <span className="text-muted-foreground text-xs ml-1">
+                          ({p.major || "Tanpa Jurusan"})
+                        </span>
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>

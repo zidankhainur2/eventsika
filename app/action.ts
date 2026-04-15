@@ -1006,7 +1006,8 @@ export async function bulkExportRecommendations(): Promise<string> {
     .from("profiles")
     .select("id, full_name, major, interests")
     .not("interests", "is", null)
-    .not("major", "is", null);
+    .not("major", "is", null)
+    .eq("role", "user");
 
   if (!profiles?.length) throw new Error("Tidak ada profil ditemukan.");
 

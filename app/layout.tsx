@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, Inter } from "next/font/google";
 import "./globals.css";
-import { Toaster } from "sonner";
 import { ProgressBar } from "@/components/ProgressBar";
 import { Suspense } from "react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -88,7 +87,7 @@ export default function RootLayout({
       >
         <Providers>
           <ToastProvider />
-          <Toaster position="top-center" richColors />
+
           <Suspense fallback={null}>
             <ProgressBar />
           </Suspense>
