@@ -102,10 +102,10 @@ export async function addEvent(
   if (!imageFile || imageFile.size === 0) {
     return { message: "Gambar poster wajib diisi.", type: "error" };
   }
-  if (imageFile.size > 2 * 1024 * 1024) {
-    // Batas 2MB
+  if (imageFile.size > 5 * 1024 * 1024) {
+    // Batas 5MB
     return {
-      message: "Ukuran gambar tidak boleh lebih dari 2MB.",
+      message: "Ukuran gambar tidak boleh lebih dari 5MB.",
       type: "error",
     };
   }
@@ -225,10 +225,10 @@ export async function updateEvent(
 
   // Cek apakah ada file gambar baru yang diunggah
   if (imageFile && imageFile.size > 0) {
-    if (imageFile.size > 2 * 1024 * 1024) {
-      // Batas 2MB
+    if (imageFile.size > 5 * 1024 * 1024) {
+      // Batas 5MB
       return {
-        message: "Ukuran gambar tidak boleh lebih dari 2MB.",
+        message: "Ukuran gambar tidak boleh lebih dari 5MB.",
         type: "error",
       };
     }
