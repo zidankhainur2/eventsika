@@ -2,7 +2,15 @@ import { getChildTagsForInterests } from "@/lib/taxonomy";
 
 const EMBEDDING_API_URL =
   "https://router.huggingface.co/hf-inference/models/" +
-  "sentence-transformers/all-MiniLM-L6-v2/pipeline/feature-extraction";
+  "intfloat/multilingual-e5-small/pipeline/feature-extraction";
+
+// const EMBEDDING_API_URL =
+//   "https://router.huggingface.co/hf-inference/models/" +
+//   "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2/pipeline/feature-extraction";
+
+// const EMBEDDING_API_URL =
+//   "https://router.huggingface.co/hf-inference/models/" +
+//   "sentence-transformers/all-MiniLM-L6-v2/pipeline/feature-extraction";
 
 const EXPECTED_DIM = 384;
 const API_TIMEOUT_MS = 30_000; // 30 detik — HF cold start bisa lama
@@ -107,19 +115,19 @@ export async function generateEmbedding(
  *   //     Bisnis Wirausaha entrepreneurship startup marketing finance"
  */
 export function buildInterestText(parentInterests: string[]): string {
-  if (!parentInterests.length) return '';
+  if (!parentInterests.length) return "";
 
   // Ambil child tags untuk enrichment embedding
   const childTags = getChildTagsForInterests(parentInterests);
 
   // Gabungkan parent names (cleaned) + child tags
   const parentNames = parentInterests
-    .map((p) => p.replace(/[&]/g, '').replace(/\s+/g, ' ').trim())
-    .join(' ');
+    .map((p) => p.replace(/[&]/g, "").replace(/\s+/g, " ").trim())
+    .join(" ");
 
-  const childSample = childTags.slice(0, 20).join(' ');
+  const childSample = childTags.slice(0, 20).join(" ");
 
-  return `${parentNames} ${childSample}`.trim();
+  return `query: ${parentNames} ${childSample}`.trim();
 }
 
 /**
@@ -137,5 +145,5 @@ export function buildEventEmbeddingText(
     tags.length > 0 ? `Topik: ${tags.join(", ")}` : "",
   ].filter(Boolean);
 
-  return parts.join(". ");
+  return `passage: ${parts.join(". ")}`;
 }
