@@ -922,7 +922,7 @@ export async function getVectorRecommendations(
       p_user_interests: expandedChildTags, // ← child tags, bukan parent
       p_weight_semantic: weightSemantic,
       p_weight_rule: weightRule,
-      p_threshold: 0.3,
+      p_threshold: 0.5,
       match_count: 30,
     });
 
@@ -953,8 +953,8 @@ export async function getVectorRecommendations(
 
 export async function runRecommendationTest(
   userId: string,
-  weightSemantic = 0.5,
-  weightRule = 0.5,
+  weightSemantic = 0.0,
+  weightRule = 0.0,
 ): Promise<RecommendationTestResult> {
   const supabase = createClient();
 
@@ -1001,15 +1001,10 @@ export async function runRecommendationTest(
 export async function bulkExportRecommendations(): Promise<string> {
   const supabase = createClient();
 
-  // 1. Ambil semua profil user
-  const { data: profiles } = await supabase
-    .from("profiles")
-    .select("id, full_name, major, interests")
-    .not("interests", "is", null)
-    .not("major", "is", null)
-    .eq("role", "user");
-
-  if (!profiles?.length) throw new Error("Tidak ada profil ditemukan.");
+  // ── Konstanta ──────────────────────────────────────────────────────────────
+  const DELAY_BETWEEN_HF_MS = 1000; // jeda antar HF call — hindari rate limit
+  const MAX_RETRY = 3; // maksimal retry jika HF gagal
+  const RETRY_DELAY_BASE_MS = 3000; // jeda sebelum retry (×attempt = backoff)
 
   const SCENARIOS = [
     { id: "S1", alpha: 1.0, beta: 0.0 },
@@ -1019,42 +1014,172 @@ export async function bulkExportRecommendations(): Promise<string> {
     { id: "S5", alpha: 0.0, beta: 1.0 },
   ];
 
+  // ── Helper ─────────────────────────────────────────────────────────────────
+  const sleep = (ms: number) =>
+    new Promise((resolve) => setTimeout(resolve, ms));
+
+  async function generateEmbeddingWithRetry(
+    text: string,
+    label: string,
+  ): Promise<number[] | null> {
+    for (let attempt = 1; attempt <= MAX_RETRY; attempt++) {
+      const result = await generateEmbedding(text);
+      if (result) return result;
+
+      if (attempt < MAX_RETRY) {
+        const waitMs = RETRY_DELAY_BASE_MS * attempt;
+        console.warn(
+          `[BulkExport] Embedding retry ${attempt}/${MAX_RETRY - 1} untuk "${label}" — tunggu ${waitMs}ms`,
+        );
+        await sleep(waitMs);
+      }
+    }
+    console.error(
+      `[BulkExport] ❌ Embedding GAGAL setelah ${MAX_RETRY}x retry: "${label}"`,
+    );
+    return null;
+  }
+
+  // ── Ambil semua profil user ────────────────────────────────────────────────
+  const { data: profiles, error: profilesError } = await supabase
+    .from("profiles")
+    .select("id, full_name, major, interests")
+    .not("interests", "is", null)
+    .not("major", "is", null)
+    .eq("role", "user");
+
+  if (profilesError) {
+    throw new Error(`Gagal fetch profil: ${profilesError.message}`);
+  }
+  if (!profiles?.length) {
+    throw new Error("Tidak ada profil ditemukan.");
+  }
+
+  console.log(
+    `[BulkExport] Mulai — ${profiles.length} profil × ${SCENARIOS.length} skenario`,
+  );
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // FASE 1: Pre-generate semua embedding dan simpan di Map
+  // Semua HF API calls selesai di sini sebelum satu pun RPC dijalankan.
+  // ══════════════════════════════════════════════════════════════════════════
+  console.log(
+    `\n[BulkExport] ── FASE 1: Generate ${profiles.length} embedding ──`,
+  );
+
+  // Map: user_id → { vector, expandedTags }
+  type EmbedCache = { vector: number[]; expandedTags: string[] };
+  const embedCache = new Map<string, EmbedCache>();
+  const failedEmbeds: string[] = [];
+
+  for (let i = 0; i < profiles.length; i++) {
+    const profile = profiles[i];
+    const label = profile.full_name ?? profile.id;
+    const progress = `[${i + 1}/${profiles.length}]`;
+
+    const parentInterests = parseInterests(profile.interests);
+    if (!parentInterests.length) {
+      console.warn(
+        `[BulkExport] ${progress} Skip "${label}" — interests kosong`,
+      );
+      failedEmbeds.push(profile.id);
+      continue;
+    }
+
+    const expandedTags = getChildTagsForInterests(parentInterests);
+    const interestText = buildInterestText(parentInterests);
+
+    const vector = await generateEmbeddingWithRetry(interestText, label);
+
+    if (!vector) {
+      // Catat sebagai gagal — tidak akan diproses di Fase 2
+      failedEmbeds.push(profile.id);
+      console.warn(
+        `[BulkExport] ${progress} ⚠️  "${label}" akan di-skip di semua skenario`,
+      );
+    } else {
+      embedCache.set(profile.id, { vector, expandedTags });
+      console.log(`[BulkExport] ${progress} ✅ Embedding OK: "${label}"`);
+    }
+
+    // Jeda antar HF call untuk menghindari rate limit
+    if (i < profiles.length - 1) {
+      await sleep(DELAY_BETWEEN_HF_MS);
+    }
+  }
+
+  const successCount = embedCache.size;
+  const failCount = failedEmbeds.length;
+  console.log(
+    `\n[BulkExport] Fase 1 selesai: ✅ ${successCount} berhasil | ❌ ${failCount} gagal`,
+  );
+  if (failedEmbeds.length > 0) {
+    console.warn(`[BulkExport] User yang di-skip:`, failedEmbeds);
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // FASE 2: Loop RPC menggunakan embedding dari cache
+  // Tidak ada HF call di sini → tidak ada risiko rate limit
+  // ══════════════════════════════════════════════════════════════════════════
+  console.log(
+    `\n[BulkExport] ── FASE 2: ${successCount} profil × ${SCENARIOS.length} skenario RPC ──`,
+  );
+
   const rows: string[] = [];
-  // Header
   rows.push(
     "user_id,full_name,major,scenario,rank,event_id,title,vector_score,rule_score,total_score",
   );
 
-  for (const profile of profiles) {
-    const parentInterests = parseInterests(profile.interests);
-    const expandedTags = getChildTagsForInterests(parentInterests);
-    const interestText = buildInterestText(parentInterests);
-    const vector = await generateEmbedding(interestText);
+  // Hanya proses profil yang embeddingnya berhasil
+  const profilesToProcess = profiles.filter((p) => embedCache.has(p.id));
+  let rpcErrors = 0;
 
-    if (!vector) continue;
+  for (let i = 0; i < profilesToProcess.length; i++) {
+    const profile = profilesToProcess[i];
+    const cached = embedCache.get(profile.id)!;
+    const label = profile.full_name ?? profile.id;
 
     for (const scenario of SCENARIOS) {
-      const { data: recs } = await supabase.rpc("evaluate_recommendations", {
-        query_embedding: vector,
-        p_user_id: profile.id,
-        p_user_major: profile.major,
-        p_user_interests: expandedTags,
-        p_weight_semantic: scenario.alpha,
-        p_weight_rule: scenario.beta,
-        p_threshold: 0.0,
-        match_count: 50,
-      });
+      const { data: recs, error: rpcError } = await supabase.rpc(
+        "evaluate_recommendations",
+        {
+          query_embedding: cached.vector,
+          p_user_id: profile.id,
+          p_user_major: profile.major,
+          p_user_interests: cached.expandedTags,
+          p_weight_semantic: scenario.alpha,
+          p_weight_rule: scenario.beta,
+          p_threshold: 0.0,
+          match_count: 50,
+        },
+      );
 
-      (recs ?? []).forEach((r: any, i: number) => {
+      // Tangkap error RPC secara eksplisit (bukan swallow diam-diam)
+      if (rpcError) {
+        rpcErrors++;
+        console.error(
+          `[BulkExport] ❌ RPC error — "${label}" skenario ${scenario.id}: ${rpcError.message}`,
+        );
+        continue; // lanjut ke skenario berikutnya
+      }
+
+      if (!recs || recs.length === 0) {
+        console.warn(
+          `[BulkExport] ⚠️  0 hasil — "${label}" skenario ${scenario.id}`,
+        );
+        continue;
+      }
+
+      (recs as any[]).forEach((r, idx) => {
         rows.push(
           [
             profile.id,
-            `"${profile.full_name}"`,
-            `"${profile.major}"`,
+            `"${(profile.full_name ?? "").replace(/"/g, '""')}"`,
+            `"${(profile.major ?? "").replace(/"/g, '""')}"`,
             scenario.id,
-            i + 1,
+            idx + 1,
             r.id,
-            `"${r.title.replace(/"/g, '""')}"`,
+            `"${(r.title ?? "").replace(/"/g, '""')}"`,
             r.vector_score?.toFixed(4) ?? "0",
             r.rule_score?.toFixed(4) ?? "0",
             r.total_score?.toFixed(4) ?? "0",
@@ -1062,6 +1187,25 @@ export async function bulkExportRecommendations(): Promise<string> {
         );
       });
     }
+
+    // Log progress setiap 5 user
+    if ((i + 1) % 5 === 0 || i === profilesToProcess.length - 1) {
+      console.log(
+        `[BulkExport] Progress Fase 2: ${i + 1}/${profilesToProcess.length} profil selesai`,
+      );
+    }
+  }
+
+  console.log(
+    `\n[BulkExport] ✅ Selesai — ${rows.length - 1} baris data dihasilkan`,
+  );
+  if (rpcErrors > 0) {
+    console.warn(`[BulkExport] Total RPC error: ${rpcErrors}`);
+  }
+  if (failedEmbeds.length > 0) {
+    console.warn(
+      `[BulkExport] ⚠️  ${failedEmbeds.length} user tidak termasuk karena embedding gagal`,
+    );
   }
 
   return rows.join("\n");
