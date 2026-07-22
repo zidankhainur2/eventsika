@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard/
+Disallow: /admin/
+Sitemap: https://eventsika.vercel.app/sitemap.xml

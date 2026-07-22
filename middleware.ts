@@ -33,43 +33,54 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   const { pathname } = request.nextUrl;
-
   const protectedRoutes = ["/profile", "/submit-event", "/admin", "/dashboard"];
 
-  if (!user && protectedRoutes.some((route) => pathname.startsWith(route))) {
-    return NextResponse.redirect(new URL("/login", request.url));
-  }
+  const isProtected = protectedRoutes.some((route) => pathname.startsWith(route));
+  const isDashboardOrAdmin = pathname.startsWith("/dashboard") || pathname.startsWith("/admin");
+  const isHomepageRedirectRule = pathname === "/";
 
-  if (user) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
+  // Hanya jalankan auth check jika rute dilindungi, rute dashboard/admin, atau beranda (untuk aturan redirect admin)
+  if (isProtected || isDashboardOrAdmin || isHomepageRedirectRule) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    const isAdminOrOrganizer =
-      profile?.role === "super_admin" || profile?.role === "organizer";
-
-    if (isAdminOrOrganizer && pathname === "/") {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
+    if (!user && isProtected) {
+      return NextResponse.redirect(new URL("/login", request.url));
     }
 
-    if (
-      !isAdminOrOrganizer &&
-      (pathname.startsWith("/dashboard") || pathname.startsWith("/admin"))
-    ) {
-      return NextResponse.redirect(new URL("/", request.url));
-    }
+    if (user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
 
-    if (pathname.startsWith("/admin") && profile?.role !== "super_admin") {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
-    }
-    if (pathname.startsWith("/submit-event") && !isAdminOrOrganizer) {
-      return NextResponse.redirect(new URL("/", request.url));
+      const isAdminOrOrganizer =
+        profile?.role === "super_admin" || profile?.role === "admin" || profile?.role === "organizer";
+
+      if (isAdminOrOrganizer && pathname === "/") {
+        if (profile?.role === "super_admin" || profile?.role === "admin") {
+          return NextResponse.redirect(new URL("/admin", request.url));
+        } else {
+          return NextResponse.redirect(new URL("/dashboard", request.url));
+        }
+      }
+
+      if (
+        !isAdminOrOrganizer &&
+        (pathname.startsWith("/dashboard") || pathname.startsWith("/admin"))
+      ) {
+        return NextResponse.redirect(new URL("/", request.url));
+      }
+
+      if (pathname.startsWith("/admin") && profile?.role !== "super_admin" && profile?.role !== "admin") {
+        return NextResponse.redirect(new URL("/dashboard", request.url));
+      }
+      if (pathname.startsWith("/submit-event") && !isAdminOrOrganizer) {
+        return NextResponse.redirect(new URL("/", request.url));
+      }
     }
   }
 
