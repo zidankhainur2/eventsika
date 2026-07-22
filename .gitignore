@@ -45,7 +45,7 @@ next-env.d.ts
 **/__tests__/
 jest.config.js
 jest.setup.js
-
+/docs
 /scripts
 /app/api
 profil_responden.csv
