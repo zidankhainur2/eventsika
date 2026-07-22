@@ -17,13 +17,13 @@ export default function DashboardLayout({
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[256px_1fr]">
       {/* --- Sidebar untuk Desktop --- */}
-      <div className="hidden border-r bg-background md:block">
+      <div className="hidden border-r-2 border-[#0A0A0A] bg-white md:block">
         <DashboardNavContent />
       </div>
 
       <div className="flex flex-col">
         {/* --- Header untuk Mobile --- */}
-        <header className="flex h-14 items-center gap-4 border-b bg-background px-4 md:hidden sticky top-0 z-40">
+        <header className="flex h-14 items-center gap-4 border-b-2 border-[#0A0A0A] bg-white px-4 md:hidden sticky top-0 z-40">
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="outline" size="icon" className="shrink-0">
@@ -31,7 +31,7 @@ export default function DashboardLayout({
                 <span className="sr-only">Buka menu navigasi</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="flex flex-col p-0">
+            <SheetContent side="left" className="flex flex-col p-0 border-r-2 border-[#0A0A0A]">
               <VisuallyHidden.Root>
                 <SheetTitle>Menu Navigasi</SheetTitle>
               </VisuallyHidden.Root>
@@ -39,12 +39,12 @@ export default function DashboardLayout({
             </SheetContent>
           </Sheet>
           <div className="w-full flex-1">
-            <h1 className="text-lg font-semibold font-heading">Menu</h1>
+            <h1 className="text-lg font-extrabold uppercase tracking-tight text-[#0A0A0A]">Menu</h1>
           </div>
         </header>
 
         {/* --- Konten Utama --- */}
-        <main className="flex flex-1 flex-col gap-4 p-4 sm:p-6 lg:p-8 bg-muted/40">
+        <main className="flex flex-1 flex-col gap-6 p-4 sm:p-6 lg:p-8 bg-[#F7F7F5]">
           {children}
         </main>
       </div>

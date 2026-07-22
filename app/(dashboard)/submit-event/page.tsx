@@ -1,5 +1,5 @@
 import EventForm from "./EventForm";
-import { addEvent } from "@/app/action";
+import { createEvent } from "@/modules/events/actions";
 
 export default function SubmitEventPage() {
   return (
@@ -11,7 +11,7 @@ export default function SubmitEventPage() {
         </p>
       </div>
       <div className="bg-card p-6 rounded-lg border">
-        <EventForm formAction={addEvent} buttonText="Submit Event" />
+        <EventForm formAction={createEvent} buttonText="Submit Event" />
       </div>
     </div>
   );
