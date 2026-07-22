@@ -48,7 +48,7 @@ export default function Hero() {
                   className="w-10 h-10 rounded-full border-2 border-[#fff8f6] dark:border-background bg-stone-200 overflow-hidden relative"
                 >
                   <Image
-                    src={`/hero-bg.webp`}
+                    src={`/hero-vector.png`}
                     alt={`User ${i}`}
                     fill
                     className="object-cover"
@@ -84,7 +84,7 @@ export default function Hero() {
           >
             <div className="relative rounded-2xl overflow-hidden mb-5 aspect-[4/3]">
               <Image
-                src="/hero-bg.webp"
+                src="/hero-vector.png"
                 alt="Event Mockup"
                 fill
                 className="object-cover"

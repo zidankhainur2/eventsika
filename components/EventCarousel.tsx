@@ -1,5 +1,5 @@
 import { type Event } from "@/lib/types";
-import EventCard from "./EventCard";
+import EventCard from "@/components/shared/EventCard";
 import Link from "next/link";
 import { FiArrowRight } from "react-icons/fi";
 import { type User } from "@supabase/supabase-js";

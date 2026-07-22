@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { createClient } from "@/utils/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 import { FiHeart, FiCalendar } from "react-icons/fi";
 
 import { type Profile } from "@/lib/types";

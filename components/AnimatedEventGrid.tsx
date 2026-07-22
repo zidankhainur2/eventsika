@@ -2,7 +2,7 @@
 
 import { type Event } from "@/lib/types";
 import { motion } from "framer-motion";
-import EventCard from "./EventCard";
+import EventCard from "@/components/shared/EventCard";
 
 interface AnimatedEventGridProps {
   events: Event[];
