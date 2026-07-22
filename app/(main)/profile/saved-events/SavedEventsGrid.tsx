@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import EventCard from "@/components/EventCard";
+import EventCard from "@/components/shared/EventCard";
 import { type Event } from "@/lib/types";
 import { type User } from "@supabase/supabase-js";
 

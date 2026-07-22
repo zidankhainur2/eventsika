@@ -1,23 +1,16 @@
-import Footer from "@/components/Footer";
-import Navbar from "@/components/Navbar";
-import ScrollToTop from "@/components/ScrollToTop";
+import Navbar from "@/components/shared/Navbar";
+import Footer from "@/components/shared/Footer";
 
 export default function MainLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   return (
-    <>
-      <ScrollToTop />
+    <div className="flex min-h-screen flex-col bg-gray-50">
       <Navbar />
-      <main
-        id="main-content"
-        className="w-full max-w-6xl mx-auto px-4 flex-grow"
-      >
-        {children}
-      </main>
+      <main className="flex-1">{children}</main>
       <Footer />
-    </>
+    </div>
   );
 }
