@@ -125,7 +125,7 @@ export function useProfile() {
 }
 
 export function useSavedEvents() {
-  const { data: user } = useQuery({
+  const { data: user, isLoading: isUserLoading } = useQuery({
     queryKey: ["user"],
     queryFn: queries.getUser,
   });
@@ -140,7 +140,7 @@ export function useSavedEvents() {
     enabled: !!user,
   });
 
-  return { events, user, isLoading, error };
+  return { events, user, isLoading: isLoading || isUserLoading, error };
 }
 
 export function useAdminData() {

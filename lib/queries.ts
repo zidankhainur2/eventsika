@@ -1,7 +1,6 @@
-import { createClient } from "@/utils/supabase/client";
-import { type Event } from "./types";
+import { createClient } from "@/lib/supabase/client";
+import { type Event, type Profile } from "./types";
 import { type User } from "@supabase/supabase-js";
-import { type Profile } from "./types";
 import { getVectorRecommendations } from "@/app/action";
 
 const supabase = createClient();
@@ -42,7 +41,6 @@ export const getRecommendedEvents = async ({
   search?: string;
   category?: string;
 } = {}): Promise<Event[]> => {
-  // Teruskan parameter pencarian ke server action
   return getVectorRecommendations(search, category);
 };
 
@@ -118,7 +116,10 @@ export async function getProfile(): Promise<Profile | null> {
     console.error("Error fetching profile:", error);
     throw new Error(error.message);
   }
-  return data;
+  return {
+    ...data,
+    email: user.email,
+  };
 }
 
 export const getRelatedEvents = async (
