@@ -4,79 +4,75 @@
 
 @layer base {
   :root {
-    /* ========================================
-       Variabel Warna Kustom EventSika
-       ======================================== */
-    --font-heading: "Plus Jakarta Sans", sans-serif; /* Update font */
-    --font-body: "Inter", sans-serif;
+    /* Surface */
+    --background: 0 0% 100%; /* #FFFFFF */
+    --foreground: 0 0% 4%; /* #0A0A0A */
+    --card: 0 0% 100%; /* #FFFFFF */
+    --card-foreground: 0 0% 4%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 4%;
 
-    /* Warna Utama kita dalam format HSL */
-    --app-background: 0 0% 98%; /* #FAFAFA */
-    --app-foreground: 220 29% 10%; /* #111827 (text-primary) */
-    --app-card: 0 0% 100%; /* #FFFFFF (surface) */
-    --app-card-foreground: 220 29% 10%; /* #111827 */
-    --app-primary: 0 60% 35%; /* #A62929 */
-    --app-primary-foreground: 0 0% 100%; /* #FFFFFF */
-    --app-accent: 45 93% 57%; /* #F4C430 */
-    --app-accent-foreground: 28 80% 25%; /* #78350F */
-    --app-border: 220 13% 91%; /* #E5E7EB */
-    --app-input: 220 13% 91%;
-    --app-ring: 217 91% 60%; /* #3B82F6 (focus-ring) */
+    /* Primary — Electric Blue */
+    --primary: 229 96% 55%; /* #1E45FB */
+    --primary-foreground: 0 0% 100%; /* #FFFFFF */
 
-    /* Warna default shadcn lainnya (bisa kita kustomisasi nanti) */
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    /* Secondary — Lime Green */
+    --secondary: 71 88% 56%; /* #CDF22B */
+    --secondary-foreground: 0 0% 4%; /* #0A0A0A */
 
-    /* Radius */
-    --radius: 0.75rem; /* Menggunakan --radius-lg sebagai basis */
+    /* Muted */
+    --muted: 60 5% 96%; /* #F7F7F5 */
+    --muted-foreground: 0 0% 42%; /* #6B6B6B */
+
+    /* Accent — Lime (alias secondary) */
+    --accent: 71 88% 56%; /* #CDF22B */
+    --accent-foreground: 0 0% 4%;
+
+    /* Destructive */
+    --destructive: 0 72% 51%; /* #DC2626 */
+    --destructive-foreground: 0 0% 100%;
+
+    /* Border — tebal hitam untuk neo-brutal base */
+    --border: 0 0% 91%; /* #E8E8E8 — border tipis umum */
+    --input: 0 0% 4%; /* #0A0A0A — border input tebal */
+    --ring: 229 96% 55%; /* #1E45FB */
+
+    /* Radius — sedikit lebih kecil untuk feel brutalist */
+    --radius: 0.5rem; /* 8px */
+
+    /* Custom tokens — di luar Shadcn */
+    --lime: 71 88% 56%; /* #CDF22B */
+    --electric-blue: 229 96% 55%; /* #1E45FB */
+    --brutal-black: 0 0% 4%; /* #0A0A0A */
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-  }
-}
+    --background: 0 0% 6%; /* #0F0F0F */
+    --foreground: 0 0% 98%; /* #FAFAFA */
+    --card: 0 0% 10%; /* #1A1A1A */
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 98%;
 
-:root {
-  --background: var(--app-background);
-  --foreground: var(--app-foreground);
-  --card: var(--app-card);
-  --card-foreground: var(--app-card-foreground);
-  --popover: var(--app-card);
-  --popover-foreground: var(--app-card-foreground);
-  --primary: var(--app-primary);
-  --primary-foreground: var(--app-primary-foreground);
-  --accent: var(--app-accent);
-  --accent-foreground: var(--app-accent-foreground);
-  --border: var(--app-border);
-  --input: var(--app-input);
-  --ring: var(--app-ring);
+    --primary: 229 96% 65%; /* #4D69FC — sedikit lebih terang di dark */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 71 88% 56%; /* #CDF22B — lime tetap sama */
+    --secondary-foreground: 0 0% 4%;
+
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 60%;
+
+    --accent: 71 88% 56%;
+    --accent-foreground: 0 0% 4%;
+
+    --destructive: 0 63% 51%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 0 0% 18%;
+    --input: 0 0% 18%;
+    --ring: 229 96% 65%;
+  }
 }
 
 * {
@@ -98,23 +94,25 @@ body,
 }
 body {
   @apply bg-background text-foreground;
+  font-family: var(--font-sans), "Plus Jakarta Sans", system-ui, sans-serif;
 }
 
 /* NProgress styling */
 #nprogress .bar {
-  background: #ffd700 !important;
+  background: #1E45FB !important;
   height: 3px !important;
 }
 
 #nprogress .peg {
   box-shadow:
-    0 0 10px #ffd700,
-    0 0 5px #ffd700 !important;
+    0 0 10px #1E45FB,
+    0 0 5px #1E45FB !important;
+  background: #1E45FB !important;
 }
 
 #nprogress .spinner-icon {
-  border-top-color: #ffd700 !important;
-  border-left-color: #ffd700 !important;
+  border-top-color: #1E45FB !important;
+  border-left-color: #1E45FB !important;
 }
 
 /* Custom scrollbar */
@@ -142,6 +140,7 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-sans), "Plus Jakarta Sans", system-ui, sans-serif;
   }
 }
 
