@@ -1,36 +1,64 @@
 import { Suspense } from "react";
-import CategoryFilters from "@/components/CategoryFilters";
-import EventsView from "@/components/EventsView";
-import HomePageSkeleton from "@/components/skeletons/HomePageSkeleton";
-import Hero from "@/components/Hero";
-import CtaSection from "@/components/CtaSection";
-import WhyEventSika from "@/components/WhyEventSika";
+import HeroSection from "@/components/home/HeroSection";
+import RecommendationSection from "@/components/home/RecommendationSection";
+import UpcomingEvents from "@/components/home/UpcomingEvents";
+import EventGridSkeleton from "@/components/shared/EventGridSkeleton";
+import CategoryCard from "@/components/ui/category-card";
 
-export default async function HomePage() {
+export const revalidate = 3600; // Cache invalidation strategy per jam (jika relevan)
+
+const categoriesList = [
+  { key: "seminar", label: "Seminar" },
+  { key: "workshop", label: "Workshop" },
+  { key: "kompetisi", label: "Kompetisi" },
+  { key: "seni-budaya", label: "Seni & Budaya" },
+  { key: "olahraga", label: "Olahraga" },
+  { key: "teknologi", label: "Teknologi" },
+  { key: "pengembangan-diri", label: "Pengembangan Diri" },
+  { key: "sosial", label: "Sosial & Komunitas" }
+];
+
+export default function HomePage() {
   return (
-    <main className="min-h-screen pb-12 bg-[#fff8f6] dark:bg-background font-sans transition-colors duration-300">
-      <Hero />
+    <div className="flex flex-col bg-white">
+      <HeroSection />
+      
+      {/* Section Rekomendasi - Tampil personal untuk Student jika login */}
+      <Suspense fallback={null}>
+        <RecommendationSection />
+      </Suspense>
 
-      <div className="max-w-7xl mx-auto px-6 md:px-12 relative z-20">
-        <Suspense fallback={<HomePageSkeleton />}>
-          {/* Filter Section (Sticky effect diadaptasi) */}
-          <div className="sticky top-16 z-40 py-6 bg-[#fff8f6]/95 dark:bg-background/95 backdrop-blur-md border-b border-stone-200 dark:border-border mb-10">
-            <CategoryFilters />
+      {/* Section Kategori — off-white bg */}
+      <section className="bg-[#F7F7F5] py-16 border-b-2 border-[#0A0A0A] px-4 md:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto space-y-8">
+          <h2 className="text-2xl md:text-3xl font-extrabold uppercase tracking-tight text-[#0A0A0A]">
+            Jelajahi Kategori
+          </h2>
+          <div className="grid grid-cols-4 md:grid-cols-8 gap-3 md:gap-4">
+            {categoriesList.map((cat) => (
+              <CategoryCard 
+                key={cat.key} 
+                categoryKey={cat.key} 
+                label={cat.label} 
+                href={`/explore?category=${encodeURIComponent(cat.label)}`} 
+              />
+            ))}
           </div>
+        </div>
+      </section>
 
-          <div id="events" className="scroll-mt-32">
-            <EventsView />
-          </div>
-        </Suspense>
-      </div>
+      {/* Section Upcoming Events — white bg */}
+      <section className="bg-white py-16 px-4 md:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto space-y-8">
+          <h2 className="text-2xl md:text-3xl font-extrabold uppercase tracking-tight text-[#0A0A0A]">
+            Event Terbaru
+          </h2>
 
-      <div className="mt-24 px-6 md:px-12 max-w-7xl mx-auto">
-        <WhyEventSika />
-      </div>
-
-      <div className="mt-24 mb-10 px-6 md:px-12">
-        <CtaSection />
-      </div>
-    </main>
+          <Suspense fallback={<EventGridSkeleton count={8} />}>
+            <UpcomingEvents />
+          </Suspense>
+        </div>
+      </section>
+    </div>
   );
 }

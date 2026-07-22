@@ -1,4 +1,4 @@
-import { createClient } from "@/utils/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 import { getMajorRelatedEvents } from "@/lib/supabase";
 import AnimatedEventGrid from "@/components/AnimatedEventGrid";
 import { EmptyState } from "@/components/EmptyState";

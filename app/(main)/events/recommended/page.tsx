@@ -1,4 +1,4 @@
-import { createClient } from "@/utils/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 import { getVectorRecommendations } from "@/app/action"; // PERUBAHAN: Gunakan dari action.ts
 import AnimatedEventGrid from "@/components/AnimatedEventGrid";
 import { EmptyState } from "@/components/EmptyState";

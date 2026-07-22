@@ -2,7 +2,7 @@ import { getAllUpcomingEvents } from "@/lib/supabase";
 import AnimatedEventGrid from "@/components/AnimatedEventGrid";
 import { EmptyState } from "@/components/EmptyState";
 import Breadcrumb from "@/components/Breadcrumb";
-import { createClient } from "@/utils/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 
 export default async function UpcomingEventsPage({
   searchParams,
