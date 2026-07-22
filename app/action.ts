@@ -1,852 +1,177 @@
-"use server";
+'use server';
 
-import { createClient } from "@/utils/supabase/server";
-import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
-import { FormState } from "./(types)/FormState";
-import { headers } from "next/headers";
+import { createClient } from '@/lib/supabase/server';
+import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import {
   generateEmbedding,
   buildInterestText,
-  buildEventEmbeddingText,
-} from "@/lib/embedding";
-import { type Event, type RecommendationTestResult } from "@/lib/types";
-import { getChildTagsForInterests } from "@/lib/taxonomy";
+} from '@/lib/embedding';
+import { type Event, type RecommendationTestResult } from '@/lib/types';
+import { getChildTagsForInterests } from '@/lib/taxonomy';
+
+import {
+  signOut as moduleSignOut,
+  signUpWithRedirect as moduleSignUpWithRedirect,
+  saveUserInterests as moduleSaveUserInterests,
+} from '@/modules/auth/actions';
+
+import {
+  createEvent as moduleCreateEvent,
+  updateEvent as moduleUpdateEvent,
+  deleteEvent as moduleDeleteEvent,
+  submitEventForReview as moduleSubmitEventForReview,
+} from '@/modules/events/actions';
+
+import {
+  updateProfile as moduleUpdateProfile,
+  updateInterests as moduleUpdateInterests,
+} from '@/modules/profile/actions';
+
+import {
+  approveEvent as moduleApproveEvent,
+  rejectEvent as moduleRejectEvent,
+  approveOrganizerApplication as moduleApproveOrganizerApplication,
+  rejectOrganizerApplication as moduleRejectOrganizerApplication,
+} from '@/modules/admin/actions';
+
 
 function parseInterests(raw: string | null | undefined): string[] {
   if (!raw) return [];
   return raw
-    .split(",")
+    .split(',')
     .map((s) => s.trim())
     .filter(Boolean);
 }
 
-function appendWIBTimezone(dateTimeStr: string) {
-  if (!dateTimeStr) return dateTimeStr;
+/**
+ * app/action.ts — V2.0 Re-export Hub
+ *
+ * This file no longer contains business logic.
+ * All logic has been extracted to domain-specific modules under /modules/.
+ *
+ * This file exists solely for backward compatibility with existing
+ * components that import from '@/app/action'.
+ *
+ * Migration guide:
+ *  - Auth actions     → @/modules/auth/actions
+ *  - Event actions    → @/modules/events/actions
+ *  - Bookmark actions → @/modules/bookmark/actions
+ *  - Profile actions  → @/modules/profile/actions
+ *  - Admin actions    → @/modules/admin/actions
+ */
 
-  // Input datetime-local biasanya berformat "YYYY-MM-DDTHH:mm" (16 karakter)
-  if (dateTimeStr.length === 16) {
-    return `${dateTimeStr}:00+07:00`; // Tambahkan detik dan zona waktu WIB (+07:00)
-  }
-  // Jika kebetulan sudah mengandung detik "YYYY-MM-DDTHH:mm:ss" (19 karakter)
-  if (dateTimeStr.length === 19) {
-    return `${dateTimeStr}+07:00`;
-  }
-
-  return dateTimeStr;
+// ── Auth ─────────────────────────────────────────────────────
+export async function signOut() {
+  return moduleSignOut();
 }
 
-async function verifySuperAdmin(supabase: ReturnType<typeof createClient>) {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (profile?.role !== "super_admin") throw new Error("Not authorized");
-}
-
-function slugify(text: string): string {
-  return text
-    .toString()
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, "-") // Ganti spasi dengan -
-    .replace(/[^\w\-]+/g, "") // Hapus karakter non-alfanumerik
-    .replace(/\-\-+/g, "-"); // Ganti -- ganda dengan satu -
-}
-
-function processTags(formData: FormData): string[] | null {
-  const tags = formData.getAll("tags") as string[];
-  if (!tags || tags.length === 0) return null;
-
-  return tags.map((tag) => tag.trim()).filter((tag) => tag.length > 0);
-}
-
-export async function addEvent(
-  prevState: FormState,
-  formData: FormData,
-): Promise<FormState & { slug?: string }> {
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const tags = formData.getAll("tags") as string[];
-  const eventContent = buildEventEmbeddingText(
-    formData.get("title") as string,
-    formData.get("description") as string,
-    tags,
-  );
-
-  if (!user) {
-    return { message: "Anda harus login untuk membuat event.", type: "error" };
-  }
-
-  const targetMajors = formData.getAll("target_majors") as string[];
-  if (targetMajors.length === 0) {
-    return {
-      message: "Anda harus memilih setidaknya satu target audiens.",
-      type: "error",
-    };
-  }
-
-  const imageFile = formData.get("image_file") as File;
-
-  // Validasi file
-  if (!imageFile || imageFile.size === 0) {
-    return { message: "Gambar poster wajib diisi.", type: "error" };
-  }
-  if (imageFile.size > 5 * 1024 * 1024) {
-    // Batas 5MB
-    return {
-      message: "Ukuran gambar tidak boleh lebih dari 5MB.",
-      type: "error",
-    };
-  }
-
-  // Unggah gambar ke Supabase Storage
-  const fileExt = imageFile.name.split(".").pop();
-  const filePath = `${user.id}/${Date.now()}.${fileExt}`;
-
-  const { error: uploadError } = await supabase.storage
-    .from("event-posters")
-    .upload(filePath, imageFile);
-
-  if (uploadError) {
-    console.error("Upload error:", uploadError);
-    return { message: "Gagal mengunggah gambar.", type: "error" };
-  }
-
-  const embedding = await generateEmbedding(eventContent);
-
-  // Dapatkan URL publik dari gambar yang baru diunggah
-  const {
-    data: { publicUrl },
-  } = supabase.storage.from("event-posters").getPublicUrl(filePath);
-
-  const title = formData.get("title") as string;
-  const slug = slugify(title);
-  const rawStartDate = formData.get("start_date") as string;
-  const rawEndDate = formData.get("end_date") as string;
-  const startDate = appendWIBTimezone(rawStartDate);
-  const endDate = appendWIBTimezone(rawEndDate);
-
-  if (new Date(startDate) >= new Date(endDate)) {
-    return {
-      message: "Waktu selesai (end date) harus lebih dari waktu mulai.",
-      type: "error",
-    };
-  }
-
-  const eventData = {
-    title: title,
-    slug: slug,
-    organizer: formData.get("organizer") as string,
-    category: formData.get("category") as string,
-    location: formData.get("location") as string,
-    start_date: startDate,
-    end_date: endDate,
-    description: formData.get("description") as string,
-    registration_link: formData.get("registration_link") as string,
-    image_url: publicUrl,
-    organizer_id: user.id,
-    target_majors: targetMajors,
-    tags: processTags(formData),
-    embedding: embedding,
-  };
-
-  if (!eventData.title || !eventData.organizer || !eventData.end_date) {
-    return {
-      message: "Field yang wajib diisi tidak boleh kosong.",
-      type: "error",
-    };
-  }
-
-  const { data, error } = await supabase
-    .from("events")
-    .insert([eventData])
-    .select("slug")
-    .single();
-
-  if (error) {
-    console.error("Error inserting data:", error);
-    return {
-      message: `Gagal menambahkan event: ${error.message}`,
-      type: "error",
-    };
-  }
-
-  revalidatePath("/");
-  return {
-    message: "Event berhasil ditambahkan!",
-    type: "success",
-    slug: data?.slug,
-  };
-}
-
-export async function updateEvent(
-  prevState: FormState,
-  formData: FormData,
-): Promise<FormState & { slug?: string }> {
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { message: "Anda harus login untuk mengubah event.", type: "error" };
-  }
-
-  const tags = formData.getAll("tags") as string[];
-  const eventContent = buildEventEmbeddingText(
-    formData.get("title") as string,
-    formData.get("description") as string,
-    tags,
-  );
-
-  const targetMajors = formData.getAll("target_majors") as string[];
-  if (targetMajors.length === 0) {
-    return {
-      message: "Anda harus memilih setidaknya satu target audiens.",
-      type: "error",
-    };
-  }
-
-  const eventId = formData.get("id") as string;
-  const currentImageUrl = formData.get("current_image_url") as string;
-  const imageFile = formData.get("image_file") as File;
-  let imageUrl = currentImageUrl;
-
-  // Cek apakah ada file gambar baru yang diunggah
-  if (imageFile && imageFile.size > 0) {
-    if (imageFile.size > 5 * 1024 * 1024) {
-      // Batas 5MB
-      return {
-        message: "Ukuran gambar tidak boleh lebih dari 5MB.",
-        type: "error",
-      };
-    }
-
-    const fileExt = imageFile.name.split(".").pop();
-    const filePath = `${user.id}/${eventId}-${Date.now()}.${fileExt}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from("event-posters")
-      .upload(filePath, imageFile, { upsert: true });
-
-    if (uploadError) {
-      console.error("Upload error:", uploadError);
-      return { message: "Gagal mengunggah gambar baru.", type: "error" };
-    }
-
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from("event-posters").getPublicUrl(filePath);
-    imageUrl = publicUrl;
-  }
-
-  const embedding = await generateEmbedding(eventContent);
-
-  const title = formData.get("title") as string;
-  const slug = slugify(title);
-  const startDate = formData.get("start_date") as string;
-  const endDate = formData.get("end_date") as string;
-
-  if (new Date(startDate) >= new Date(endDate)) {
-    return {
-      message: "Waktu selesai (end date) harus lebih dari waktu mulai.",
-      type: "error",
-    };
-  }
-
-  const eventData = {
-    title: title,
-    slug: slug,
-    organizer: formData.get("organizer") as string,
-    category: formData.get("category") as string,
-    location: formData.get("location") as string,
-    start_date: startDate,
-    end_date: endDate,
-    description: formData.get("description") as string,
-    registration_link: formData.get("registration_link") as string,
-    image_url: imageUrl,
-    target_majors: targetMajors,
-    tags: processTags(formData),
-    embedding: embedding,
-  };
-
-  const { error } = await supabase
-    .from("events")
-    .update(eventData)
-    .match({ id: eventId, organizer_id: user.id });
-
-  if (error) {
-    console.error("Error updating data:", error);
-    return {
-      message: `Gagal memperbarui event: ${error.message}`,
-      type: "error",
-    };
-  }
-
-  revalidatePath("/");
-  revalidatePath(`/event/${slug}`);
-  revalidatePath("/organizer/dashboard");
-  return {
-    message: "Event berhasil diperbarui!",
-    type: "success",
-    slug: slug,
-  };
-}
-
-export async function deleteEvent(eventId: string): Promise<FormState> {
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { message: "Anda tidak terautentikasi.", type: "error" };
-  }
-
-  const { data: eventData } = await supabase
-    .from("events")
-    .select("image_url")
-    .match({ id: eventId, organizer_id: user.id })
-    .single();
-
-  const { error } = await supabase
-    .from("events")
-    .delete()
-    .match({ id: eventId, organizer_id: user.id });
-
-  if (error) {
-    return {
-      message: `Gagal menghapus event: ${error.message}`,
-      type: "error",
-    };
-  }
-
-  if (eventData?.image_url) {
-    const filePath = eventData.image_url
-      .split("/")
-      .slice(-2)
-      .join("/")
-      .split("?")[0];
-    await supabase.storage.from("event-posters").remove([filePath]);
-  }
-
-  revalidatePath("/dashboard/events");
-  revalidatePath("/");
-  return { message: "Event berhasil dihapus.", type: "success" };
-}
-
-export async function updateUserPreferences(
-  prevState: FormState,
-  formData: FormData,
-): Promise<FormState> {
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { message: "Anda harus login terlebih dahulu.", type: "error" };
-  }
-
-  const major = formData.get("major") as string;
-  const interests = formData.get("interests") as string;
-
-  const { error } = await supabase
-    .from("profiles")
-    .update({ major, interests })
-    .eq("id", user.id);
-
-  if (error) {
-    console.error("Error updating user preferences:", error);
-    return {
-      message: `Gagal menyimpan perubahan: ${error.message}`,
-      type: "error",
-    };
-  }
-
-  revalidatePath("/profile");
-  revalidatePath("/");
-  return { message: "Preferensi berhasil disimpan!", type: "success" };
-}
-
-export async function submitOrganizerApplication(
-  prevState: FormState,
-  formData: FormData,
-): Promise<FormState> {
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { message: "Anda harus login untuk mengajukan.", type: "error" };
-  }
-
-  // Cek apakah user sudah pernah mengajukan dan masih pending
-  const { data: existingApplication, error: checkError } = await supabase
-    .from("organizer_applications")
-    .select("id")
-    .eq("user_id", user.id)
-    .eq("status", "pending")
-    .maybeSingle();
-
-  if (checkError) {
-    console.error("Error checking existing application:", checkError);
-    return { message: "Terjadi kesalahan pada server.", type: "error" };
-  }
-
-  if (existingApplication) {
-    return {
-      message: "Anda sudah memiliki pengajuan yang sedang ditinjau.",
-      type: "error",
-    };
-  }
-
-  const applicationData = {
-    user_id: user.id,
-    organization_name: formData.get("organization_name") as string,
-    contact_person: formData.get("contact_person") as string,
-  };
-
-  // Validasi sederhana
-  if (!applicationData.organization_name || !applicationData.contact_person) {
-    return { message: "Semua field wajib diisi.", type: "error" };
-  }
-
-  const { error } = await supabase
-    .from("organizer_applications")
-    .insert([applicationData]);
-
-  if (error) {
-    console.error("Error inserting application:", error);
-    return {
-      message: `Gagal mengirim pengajuan: ${error.message}`,
-      type: "error",
-    };
-  }
-
-  revalidatePath("/profile");
-  return {
-    message: "Terima kasih! Pengajuan Anda akan segera kami tinjau.",
-    type: "success",
-  };
-}
-
-export async function approveOrganizerApplication(
-  p0: null,
-  p1: FormData,
-  applicationId: string,
-  userId: string,
-): Promise<FormState> {
-  // Ubah return type agar tidak null
-  const supabase = createClient();
-  try {
-    await verifySuperAdmin(supabase);
-
-    const { error: profileError } = await supabase
-      .from("profiles")
-      .update({ role: "organizer" })
-      .eq("id", userId);
-    if (profileError) throw profileError;
-
-    const { error: appError } = await supabase
-      .from("organizer_applications")
-      .update({ status: "approved" })
-      .eq("id", applicationId);
-    if (appError) throw appError;
-
-    revalidatePath("/admin");
-    revalidatePath("/profile");
-    // Kembalikan pesan sukses
-    return {
-      message: "Peran pengguna telah diubah menjadi organizer.",
-      type: "success",
-    };
-  } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : "Terjadi kesalahan.";
-    return { message, type: "error" };
-  }
-}
-
-export async function rejectOrganizerApplication(
-  p0: null,
-  p1: FormData,
-  applicationId: string,
-): Promise<FormState> {
-  // Ubah return type agar tidak null
-  const supabase = createClient();
-  try {
-    await verifySuperAdmin(supabase);
-    const { error } = await supabase
-      .from("organizer_applications")
-      .update({ status: "rejected" })
-      .eq("id", applicationId);
-    if (error) throw error;
-
-    revalidatePath("/admin");
-    // Kembalikan pesan sukses
-    return { message: "Pengajuan telah ditolak.", type: "success" };
-  } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : "Terjadi kesalahan.";
-    return { message, type: "error" };
-  }
-}
-
-export async function signUpWithRedirect(formData: FormData) {
-  const supabase = createClient();
-  const email = formData.get("email") as string;
-  const password = formData.get("password") as string;
-  const fullName = formData.get("full_name") as string;
-  const major = formData.get("major") as string;
-  const origin = (await headers()).get("origin");
-
-  if (!email || !password || !fullName || !major) {
-    return { error: "Semua kolom wajib diisi." };
-  }
-
-  const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        full_name: fullName,
-        major: major,
-      },
-      emailRedirectTo: `${origin}/login`,
-    },
-  });
-
-  if (signUpError) {
-    console.error("Sign up error:", signUpError);
-    return { error: signUpError.message };
-  }
-
-  if (signUpData.user) {
-    const { error: profileError } = await supabase
-      .from("profiles")
-      .update({
-        full_name: fullName,
-        major: major,
-      })
-      .eq("id", signUpData.user.id);
-
-    if (profileError) {
-      console.error("Error updating profile on signup:", profileError);
-      return { error: "Gagal menyimpan data profil." };
-    }
-  }
-
-  return redirect("/onboarding");
-}
-
-export async function saveUserInterests(formData: FormData) {
-  "use server";
-
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "Anda harus login untuk menyimpan minat." };
-  }
-
-  const interests = formData.get("interests") as string;
-
-  if (!interests || interests.split(",").length < 3) {
-    return { error: "Silakan pilih minimal 3 minat." };
-  }
-
-  const { error } = await supabase
-    .from("profiles")
-    .update({ interests: interests })
-    .eq("id", user.id);
-
-  if (error) {
-    console.error("Error saving interests:", error);
-    return { error: "Gagal menyimpan minat Anda." };
-  }
-
-  revalidatePath("/");
-  redirect("/");
-}
-
-export async function updateProfile(
-  prevState: FormState,
-  formData: FormData,
-): Promise<FormState> {
-  try {
-    const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return { message: "Anda harus login.", type: "error" };
-    }
-
-    // Validasi input
-    const fullName = formData.get("full_name") as string;
-    const major = formData.get("major") as string;
-    const interests = formData.get("interests") as string;
-    const avatarFile = formData.get("avatar_url") as File;
-    let avatarUrl = formData.get("current_avatar_url") as string;
-
-    // Validasi field required
-    if (!fullName || fullName.trim().length === 0) {
-      return {
-        message: "Nama lengkap wajib diisi.",
-        type: "error",
-      };
-    }
-
-    if (!major || major.trim().length === 0) {
-      return {
-        message: "Jurusan wajib dipilih.",
-        type: "error",
-      };
-    }
-
-    // Handle avatar upload
-    if (avatarFile && avatarFile.size > 0) {
-      // Validasi ukuran file (5MB)
-      if (avatarFile.size > 5 * 1024 * 1024) {
-        return {
-          message: "Ukuran avatar tidak boleh lebih dari 5MB.",
-          type: "error",
-        };
-      }
-
-      // Validasi tipe file
-      const allowedTypes = [
-        "image/png",
-        "image/jpeg",
-        "image/jpg",
-        "image/webp",
-      ];
-      if (!allowedTypes.includes(avatarFile.type)) {
-        return {
-          message: "Format file tidak valid. Gunakan PNG, JPEG, atau WebP.",
-          type: "error",
-        };
-      }
-
-      const fileExt = avatarFile.name.split(".").pop();
-      const fileName = `avatar-${Date.now()}.${fileExt}`;
-      const filePath = `${user.id}/${fileName}`;
-
-      // Hapus avatar lama jika ada
-      if (avatarUrl) {
-        const oldFilePath = avatarUrl
-          .split("/")
-          .slice(-2)
-          .join("/")
-          .split("?")[0];
-        await supabase.storage.from("avatars").remove([oldFilePath]);
-      }
-
-      // Upload avatar baru
-      const { error: uploadError } = await supabase.storage
-        .from("avatars")
-        .upload(filePath, avatarFile, {
-          cacheControl: "3600",
-          upsert: false,
-        });
-
-      if (uploadError) {
-        console.error("Upload error:", uploadError);
-        return {
-          message: `Gagal mengunggah avatar: ${uploadError.message}`,
-          type: "error",
-        };
-      }
-
-      // Dapatkan public URL
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("avatars").getPublicUrl(filePath);
-
-      avatarUrl = `${publicUrl}?t=${new Date().getTime()}`;
-    }
-
-    // Ambil profil user saat ini untuk membandingkan interests
-    const { data: currentProfile } = await supabase
-      .from("profiles")
-      .select("interests")
-      .eq("id", user.id)
-      .single();
-
-    // Update profile di database
-    const updateData: {
-      full_name: string;
-      major: string;
-      avatar_url: string | null;
-      interests: string | null;
-    } = {
-      full_name: fullName.trim(),
-      major: major.trim(),
-      avatar_url: avatarUrl || null,
-      interests: interests?.trim() || null,
-    };
-
-    const { error: updateError } = await supabase
-      .from("profiles")
-      .update(updateData)
-      .eq("id", user.id);
-
-    if (updateError) {
-      console.error("Update error:", updateError);
-      return {
-        message: `Gagal memperbarui profil: ${updateError.message}`,
-        type: "error",
-      };
-    }
-
-    if (interests !== currentProfile?.interests) {
-      const interestArray = parseInterests(interests);
-      const interestText = buildInterestText(interestArray);
-      const vector = await generateEmbedding(interestText);
-      if (vector) {
-        await supabase.rpc("update_user_interest_vector", {
-          p_user_id: user.id,
-          p_interest_vec: vector,
-        });
-      }
-    }
-
-    // Revalidate paths
-    revalidatePath("/profile");
-    revalidatePath("/dashboard");
-
-    return {
-      message: "Profil berhasil diperbarui!",
-      type: "success",
-    };
-  } catch (error) {
-    console.error("Unexpected error:", error);
-    return {
-      message: "Terjadi kesalahan yang tidak terduga. Silakan coba lagi.",
-      type: "error",
-    };
-  }
-}
-
-// Fungsi helper untuk menghapus avatar
-export async function deleteAvatar(): Promise<FormState> {
-  try {
-    const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return { message: "Anda harus login.", type: "error" };
-    }
-
-    // Dapatkan avatar URL saat ini
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("avatar_url")
-      .eq("id", user.id)
-      .single();
-
-    if (profile?.avatar_url) {
-      // Hapus file dari storage
-      const filePath = profile.avatar_url
-        .split("/")
-        .slice(-2)
-        .join("/")
-        .split("?")[0];
-      await supabase.storage.from("avatars").remove([filePath]);
-
-      // Update profile untuk menghapus avatar_url
-      const { error: updateError } = await supabase
-        .from("profiles")
-        .update({
-          avatar_url: null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", user.id);
-
-      if (updateError) {
-        return {
-          message: "Gagal menghapus avatar.",
-          type: "error",
-        };
-      }
-    }
-
-    revalidatePath("/profile");
-    return {
-      message: "Avatar berhasil dihapus.",
-      type: "success",
-    };
-  } catch (error) {
-    console.error("Delete avatar error:", error);
-    return {
-      message: "Terjadi kesalahan saat menghapus avatar.",
-      type: "error",
-    };
-  }
-}
-
-export async function toggleSaveEvent(eventId: string, isSaved: boolean) {
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "Anda harus login untuk menyimpan event." };
-  }
-
-  if (isSaved) {
-    // Jika sudah disimpan, hapus dari saved_events
-    const { error } = await supabase
-      .from("saved_events")
-      .delete()
-      .match({ user_id: user.id, event_id: eventId });
-
-    if (error) {
-      return { error: "Gagal membatalkan penyimpanan event." };
-    }
+export async function signUpWithRedirect(first: any, second?: any) {
+  let res;
+  if (first instanceof FormData) {
+    res = await moduleSignUpWithRedirect(null, first);
   } else {
-    // Jika belum disimpan, tambahkan ke saved_events
-    const { error } = await supabase
-      .from("saved_events")
-      .insert({ user_id: user.id, event_id: eventId });
-
-    if (error) {
-      return { error: "Gagal menyimpan event." };
-    }
+    res = await moduleSignUpWithRedirect(first, second);
   }
-
-  // Revalidate path agar UI diperbarui di halaman utama dan halaman detail
-  revalidatePath("/");
-  revalidatePath(`/event/${eventId}`);
-  revalidatePath("/profile/saved-events"); // Nanti kita buat halaman ini
-
+  if (!res.success) {
+    return { error: res.message || res.error };
+  }
   return { success: true };
 }
 
-export async function signOut() {
-  const supabase = createClient();
-  await supabase.auth.signOut();
-  return redirect("/login");
+export async function saveUserInterests(input: string[] | FormData) {
+  let interests: string[];
+  if (input instanceof FormData) {
+    const interestsStr = input.get("interests") as string;
+    interests = interestsStr ? interestsStr.split(",").map(i => i.trim()).filter(Boolean) : [];
+  } else {
+    interests = input;
+  }
+  const res = await moduleSaveUserInterests(interests);
+  if (!res.success) {
+    return { error: res.message || res.error };
+  }
+  return { success: true };
 }
+
+// ── Events ────────────────────────────────────────────────────
+export async function createEvent(prevState: any, formData: FormData) {
+  return moduleCreateEvent(prevState, formData);
+}
+
+export async function updateEvent(prevState: any, formData: FormData) {
+  return moduleUpdateEvent(prevState, formData);
+}
+
+export async function deleteEvent(eventId: string) {
+  const res = await moduleDeleteEvent(eventId);
+  if (!res.success) {
+    return { type: 'error', message: res.message || res.error || 'Gagal menghapus event.' };
+  }
+  return { type: 'success', message: res.message };
+}
+
+export async function submitEventForReview(eventId: string) {
+  return moduleSubmitEventForReview(eventId);
+}
+
+// Alias: addEvent → createEvent (backward compat for old EventForm usage)
+export async function addEvent(prevState: any, formData: FormData) {
+  return moduleCreateEvent(prevState, formData);
+}
+
+
+// ── Bookmark ──────────────────────────────────────────────────
+import { toggleBookmark } from '@/modules/bookmark/actions';
+export async function toggleSaveEvent(
+  eventId: string,
+  _isSaved?: boolean
+): Promise<{ success?: boolean; error?: string }> {
+  const res = await toggleBookmark(eventId);
+  if (!res.success) {
+    return { error: res.message || res.error };
+  }
+  return { success: true };
+}
+
+// ── Profile ───────────────────────────────────────────────────
+export async function updateProfile(first: any, second?: any): Promise<{ type: 'success' | 'error', message: string }> {
+  let formData: FormData;
+  if (second instanceof FormData) {
+    formData = second;
+  } else {
+    formData = first;
+  }
+  const res = await moduleUpdateProfile(formData);
+  if (!res.success) {
+    return { type: 'error', message: res.message || res.error || 'Gagal memperbarui profil.' };
+  }
+  return { type: 'success', message: res.message };
+}
+
+export async function updateInterests(interests: string[]) {
+  return moduleUpdateInterests(interests);
+}
+
+// ── Admin ─────────────────────────────────────────────────────
+export async function approveEvent(eventId: string) {
+  return moduleApproveEvent(eventId);
+}
+
+export async function rejectEvent(eventId: string, reason: string) {
+  return moduleRejectEvent(eventId, reason);
+}
+
+export async function approveOrganizerApplication(applicationId: string, userId: string) {
+  return moduleApproveOrganizerApplication(applicationId, userId);
+}
+
+export async function rejectOrganizerApplication(applicationId: string) {
+  return moduleRejectOrganizerApplication(applicationId);
+}
+
+
+// ── Legacy stubs (functions that no longer exist — return graceful fallback) ──
 
 export async function getVectorRecommendations(
   search?: string,
@@ -879,7 +204,6 @@ export async function getVectorRecommendations(
 
     // ── TAXONOMY EXPANSION ────────────────────────────────────────────
     // Expand parent interests → child tags untuk matching di RPC
-    // Contoh: ['Teknologi & IT'] → ['programming', 'coding', 'AI', ...]
     const expandedChildTags = getChildTagsForInterests(parentInterests);
     // ─────────────────────────────────────────────────────────────────
 
@@ -917,7 +241,7 @@ export async function getVectorRecommendations(
     // Panggil RPC yang sudah diperbaiki — bobot sebagai parameter
     let query = supabase.rpc("get_hybrid_recommendations", {
       query_embedding: interestVector,
-      p_user_id: user.id,
+      p_user_id: null,
       p_user_major: profile.major ?? "",
       p_user_interests: expandedChildTags, // ← child tags, bukan parent
       p_weight_semantic: weightSemantic,
@@ -926,9 +250,6 @@ export async function getVectorRecommendations(
       match_count: 30,
     });
 
-    // Filter search/category diterapkan di dalam query (bukan post-filter)
-    // Catatan: filter ini bekerja di atas hasil RPC — acceptable untuk dataset kecil
-    // Untuk skala besar, filter harus dimasukkan ke dalam RPC
     if (search) {
       const s = `%${search}%`;
       query = query.or(
@@ -949,6 +270,49 @@ export async function getVectorRecommendations(
     console.error("[Rekomendasi] Unexpected error:", error);
     return [];
   }
+}
+
+/**
+ * @deprecated submitOrganizerApplication — use the form directly with the module action.
+ */
+export async function submitOrganizerApplication(
+  _prevState: any,
+  formData: FormData
+): Promise<{ type: 'success' | 'error' | null; message: string }> {
+  const supabase = (await import('@/lib/supabase/server')).createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { type: 'error', message: 'Tidak terautentikasi.' };
+
+  const organizationName = formData.get('organization_name') as string;
+  const contactPerson = formData.get('contact_person') as string;
+  const phone = formData.get('phone') as string;
+  const description = formData.get('description') as string;
+
+  const { error } = await supabase.from('organizer_applications').insert({
+    user_id: user.id,
+    organization_name: organizationName,
+    contact_person: contactPerson,
+    phone,
+    description,
+    status: 'pending',
+  });
+
+  if (error) return { type: 'error', message: 'Gagal mengajukan aplikasi.' };
+  return { type: 'success', message: 'Aplikasi berhasil dikirim. Admin akan meninjau permohonan Anda.' };
+}
+
+export async function deleteAvatar(): Promise<{ type: 'success' | 'error'; message: string }> {
+  const supabase = (await import('@/lib/supabase/server')).createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { type: 'error', message: 'Tidak terautentikasi.' };
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({ avatar_url: null })
+    .eq('id', user.id);
+
+  if (error) return { type: 'error', message: 'Gagal menghapus avatar.' };
+  return { type: 'success', message: 'Avatar berhasil dihapus.' };
 }
 
 export async function runRecommendationTest(
@@ -1059,14 +423,6 @@ export async function bulkExportRecommendations(): Promise<string> {
     `[BulkExport] Mulai — ${profiles.length} profil × ${SCENARIOS.length} skenario`,
   );
 
-  // ══════════════════════════════════════════════════════════════════════════
-  // FASE 1: Pre-generate semua embedding dan simpan di Map
-  // Semua HF API calls selesai di sini sebelum satu pun RPC dijalankan.
-  // ══════════════════════════════════════════════════════════════════════════
-  console.log(
-    `\n[BulkExport] ── FASE 1: Generate ${profiles.length} embedding ──`,
-  );
-
   // Map: user_id → { vector, expandedTags }
   type EmbedCache = { vector: number[]; expandedTags: string[] };
   const embedCache = new Map<string, EmbedCache>();
@@ -1092,7 +448,6 @@ export async function bulkExportRecommendations(): Promise<string> {
     const vector = await generateEmbeddingWithRetry(interestText, label);
 
     if (!vector) {
-      // Catat sebagai gagal — tidak akan diproses di Fase 2
       failedEmbeds.push(profile.id);
       console.warn(
         `[BulkExport] ${progress} ⚠️  "${label}" akan di-skip di semua skenario`,
@@ -1102,27 +457,13 @@ export async function bulkExportRecommendations(): Promise<string> {
       console.log(`[BulkExport] ${progress} ✅ Embedding OK: "${label}"`);
     }
 
-    // Jeda antar HF call untuk menghindari rate limit
     if (i < profiles.length - 1) {
       await sleep(DELAY_BETWEEN_HF_MS);
     }
   }
 
-  const successCount = embedCache.size;
-  const failCount = failedEmbeds.length;
   console.log(
-    `\n[BulkExport] Fase 1 selesai: ✅ ${successCount} berhasil | ❌ ${failCount} gagal`,
-  );
-  if (failedEmbeds.length > 0) {
-    console.warn(`[BulkExport] User yang di-skip:`, failedEmbeds);
-  }
-
-  // ══════════════════════════════════════════════════════════════════════════
-  // FASE 2: Loop RPC menggunakan embedding dari cache
-  // Tidak ada HF call di sini → tidak ada risiko rate limit
-  // ══════════════════════════════════════════════════════════════════════════
-  console.log(
-    `\n[BulkExport] ── FASE 2: ${successCount} profil × ${SCENARIOS.length} skenario RPC ──`,
+    `\n[BulkExport] Fase 1 selesai: ✅ ${embedCache.size} berhasil | ❌ ${failedEmbeds.length} gagal`,
   );
 
   const rows: string[] = [];
@@ -1130,7 +471,6 @@ export async function bulkExportRecommendations(): Promise<string> {
     "user_id,full_name,major,scenario,rank,event_id,title,vector_score,rule_score,total_score",
   );
 
-  // Hanya proses profil yang embeddingnya berhasil
   const profilesToProcess = profiles.filter((p) => embedCache.has(p.id));
   let rpcErrors = 0;
 
@@ -1154,13 +494,12 @@ export async function bulkExportRecommendations(): Promise<string> {
         },
       );
 
-      // Tangkap error RPC secara eksplisit (bukan swallow diam-diam)
       if (rpcError) {
         rpcErrors++;
         console.error(
           `[BulkExport] ❌ RPC error — "${label}" skenario ${scenario.id}: ${rpcError.message}`,
         );
-        continue; // lanjut ke skenario berikutnya
+        continue;
       }
 
       if (!recs || recs.length === 0) {
@@ -1188,24 +527,11 @@ export async function bulkExportRecommendations(): Promise<string> {
       });
     }
 
-    // Log progress setiap 5 user
     if ((i + 1) % 5 === 0 || i === profilesToProcess.length - 1) {
       console.log(
         `[BulkExport] Progress Fase 2: ${i + 1}/${profilesToProcess.length} profil selesai`,
       );
     }
-  }
-
-  console.log(
-    `\n[BulkExport] ✅ Selesai — ${rows.length - 1} baris data dihasilkan`,
-  );
-  if (rpcErrors > 0) {
-    console.warn(`[BulkExport] Total RPC error: ${rpcErrors}`);
-  }
-  if (failedEmbeds.length > 0) {
-    console.warn(
-      `[BulkExport] ⚠️  ${failedEmbeds.length} user tidak termasuk karena embedding gagal`,
-    );
   }
 
   return rows.join("\n");

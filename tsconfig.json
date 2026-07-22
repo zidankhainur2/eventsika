@@ -18,10 +18,6 @@
     "jsx": "react-jsx",
     "forceConsistentCasingInFileNames": true,
     "incremental": true,
-    "types": [
-      "jest",
-      "@testing-library/jest-dom"
-    ],
     "plugins": [
       {
         "name": "next"
@@ -41,6 +37,7 @@
     ".next/dev/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "docs"
   ]
 }
